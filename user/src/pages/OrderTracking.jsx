@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import {
   CheckCircle,
   Clock,
@@ -21,16 +21,20 @@ import axios from "axios"
 import io from "socket.io-client"
 import { toast } from "react-hot-toast"
 import jsPDF from "jspdf"
+import { useCart } from "../contexts/CartContext"
 
 const OrderTracking = () => {
   const { orderId } = useParams()
+  const navigate = useNavigate()
+  const { cartItems, addToCart, removeFromCart, updateQuantity, getTotalItems, getTotalPrice, setRestaurantContext } =
+    useCart()
+
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [socket, setSocket] = useState(null)
   const [menuItems, setMenuItems] = useState([])
   const [showMenu, setShowMenu] = useState(false)
-  const [cart, setCart] = useState([])
   const [menuLoading, setMenuLoading] = useState(false)
 
   useEffect(() => {
@@ -43,6 +47,13 @@ const OrderTracking = () => {
       }
     }
   }, [orderId])
+
+  useEffect(() => {
+    if (order?.restaurant?._id) {
+      console.log("[v0] Setting restaurant context:", order.restaurant._id)
+      setRestaurantContext(order.restaurant._id)
+    }
+  }, [order, setRestaurantContext])
 
   const setupSocket = () => {
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000"
@@ -137,30 +148,19 @@ const OrderTracking = () => {
     }
   }
 
-  const addToCart = (dish) => {
-    const existingItem = cart.find((item) => item._id === dish._id)
-    if (existingItem) {
-      setCart(cart.map((item) => (item._id === dish._id ? { ...item, quantity: item.quantity + 1 } : item)))
-    } else {
-      setCart([...cart, { ...dish, quantity: 1 }])
-    }
+  const handleAddToCart = (dish) => {
+    console.log("[v0] Adding dish to global cart:", dish.name)
+    addToCart(dish, 1)
     toast.success(`${dish.name} added to cart`)
   }
 
-  const removeFromCart = (dishId) => {
-    setCart(cart.filter((item) => item._id !== dishId))
+  const handleRemoveFromCart = (dishId) => {
+    removeFromCart(dishId)
+    toast.success("Item removed from cart")
   }
 
-  const updateQuantity = (dishId, quantity) => {
-    if (quantity === 0) {
-      removeFromCart(dishId)
-      return
-    }
-    setCart(cart.map((item) => (item._id === dishId ? { ...item, quantity } : item)))
-  }
-
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0)
+  const handleUpdateQuantity = (dishId, quantity) => {
+    updateQuantity(dishId, quantity)
   }
 
   const handleShowMenu = () => {
@@ -168,6 +168,17 @@ const OrderTracking = () => {
     if (menuItems.length === 0) {
       fetchMenuItems()
     }
+  }
+
+  const handleProceedToCheckout = () => {
+    if (cartItems.length === 0) {
+      toast.error("Please add some items to cart first")
+      return
+    }
+
+    console.log("[v0] Proceeding to checkout with items:", cartItems.length)
+    setShowMenu(false)
+    navigate(`/checkout/${order.restaurant._id}?from=tracking&originalOrder=${orderId}`)
   }
 
   const getStatusSteps = () => {
@@ -211,7 +222,13 @@ const OrderTracking = () => {
   }
 
   const canDownloadReceipt = () => {
-    return order && order.paymentStatus === "completed"
+    const canDownload = order && order.paymentStatus === "completed"
+    console.log("[v0] Can download receipt:", {
+      hasOrder: !!order,
+      paymentStatus: order?.paymentStatus,
+      canDownload,
+    })
+    return canDownload
   }
 
   const handleCancelOrder = async () => {
@@ -345,6 +362,8 @@ const OrderTracking = () => {
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-6">
+        {/* ... existing code for order status, restaurant info, order details ... */}
+
         {/* Order Status */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
           <div className="text-center mb-6">
@@ -557,41 +576,45 @@ const OrderTracking = () => {
         )}
 
         {/* Download Receipt */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          whileHover={{ scale: canDownloadReceipt() ? 1.02 : 1 }}
-          whileTap={{ scale: canDownloadReceipt() ? 0.98 : 1 }}
-          onClick={downloadReceipt}
-          disabled={!canDownloadReceipt()}
-          className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-colors ${
-            canDownloadReceipt()
-              ? "bg-primary-600 hover:bg-primary-700 text-white"
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
-          }`}
+          className="space-y-3"
         >
-          <Receipt className="w-5 h-5" />
-          <span>Download Receipt (PDF)</span>
-          <Download className="w-4 h-4" />
-        </motion.button>
+          <motion.button
+            whileHover={{ scale: canDownloadReceipt() ? 1.02 : 1 }}
+            whileTap={{ scale: canDownloadReceipt() ? 0.98 : 1 }}
+            onClick={downloadReceipt}
+            disabled={!canDownloadReceipt()}
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-colors ${
+              canDownloadReceipt()
+                ? "bg-primary-600 hover:bg-primary-700 text-white"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            <Receipt className="w-5 h-5" />
+            <span>Download Receipt (PDF)</span>
+            <Download className="w-4 h-4" />
+          </motion.button>
 
-        {!canDownloadReceipt() && (
-          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Receipt available after payment confirmation</span>
-          </div>
-        )}
+          {!canDownloadReceipt() && (
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Receipt available after payment confirmation</span>
+            </div>
+          )}
+        </motion.div>
       </div>
 
       {/* Menu Modal */}
       {showMenu && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
             initial={{ opacity: 0, y: "100%" }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md h-[90vh] sm:h-[80vh] flex flex-col"
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md h-screen sm:h-[85vh] flex flex-col max-h-screen"
           >
             {/* Menu Header */}
             <div className="flex-shrink-0 p-4 border-b border-gray-200 flex items-center justify-between bg-white rounded-t-2xl sm:rounded-t-2xl">
@@ -608,8 +631,8 @@ const OrderTracking = () => {
             </div>
 
             {/* Menu Content - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(90vh - 140px)" }}>
-              <div className="p-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain webkit-overflow-scrolling-touch">
+              <div className="p-4 pb-6">
                 {menuLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
@@ -658,23 +681,29 @@ const OrderTracking = () => {
                           )}
                         </div>
 
-                        {cart.find((item) => item._id === dish._id) ? (
+                        {cartItems.find((item) => item._id === dish._id) ? (
                           <div className="flex items-center justify-between mt-4">
                             <div className="flex items-center space-x-3">
                               <button
                                 onClick={() =>
-                                  updateQuantity(dish._id, cart.find((item) => item._id === dish._id).quantity - 1)
+                                  handleUpdateQuantity(
+                                    dish._id,
+                                    cartItems.find((item) => item._id === dish._id).quantity - 1,
+                                  )
                                 }
                                 className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg font-semibold transition-colors"
                               >
                                 -
                               </button>
                               <span className="font-semibold text-lg min-w-[2rem] text-center">
-                                {cart.find((item) => item._id === dish._id)?.quantity}
+                                {cartItems.find((item) => item._id === dish._id)?.quantity}
                               </span>
                               <button
                                 onClick={() =>
-                                  updateQuantity(dish._id, cart.find((item) => item._id === dish._id).quantity + 1)
+                                  handleUpdateQuantity(
+                                    dish._id,
+                                    cartItems.find((item) => item._id === dish._id).quantity + 1,
+                                  )
                                 }
                                 className="w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center text-lg font-semibold transition-colors"
                               >
@@ -682,7 +711,7 @@ const OrderTracking = () => {
                               </button>
                             </div>
                             <button
-                              onClick={() => removeFromCart(dish._id)}
+                              onClick={() => handleRemoveFromCart(dish._id)}
                               className="text-red-600 hover:text-red-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                             >
                               Remove
@@ -690,7 +719,7 @@ const OrderTracking = () => {
                           </div>
                         ) : (
                           <button
-                            onClick={() => addToCart(dish)}
+                            onClick={() => handleAddToCart(dish)}
                             className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2"
                           >
                             <span>Add to Cart</span>
@@ -699,30 +728,24 @@ const OrderTracking = () => {
                         )}
                       </motion.div>
                     ))}
-                    <div className="h-4"></div>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Cart Summary - Fixed at bottom */}
-            {cart.length > 0 && (
+            {cartItems.length > 0 && (
               <div className="flex-shrink-0 border-t border-gray-200 bg-white">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <span className="font-semibold text-gray-900 text-lg">
-                        {cart.reduce((sum, item) => sum + item.quantity, 0)} items
-                      </span>
+                      <span className="font-semibold text-gray-900 text-lg">{getTotalItems()} items</span>
                       <p className="text-sm text-gray-600">in cart</p>
                     </div>
-                    <span className="text-2xl font-bold text-orange-600">₹{getCartTotal()}</span>
+                    <span className="text-2xl font-bold text-orange-600">₹{getTotalPrice()}</span>
                   </div>
                   <button
-                    onClick={() => {
-                      localStorage.setItem("additionalCart", JSON.stringify(cart))
-                      window.location.href = `/checkout/${order.restaurant._id}?additionalOrder=true`
-                    }}
+                    onClick={handleProceedToCheckout}
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 px-4 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center space-x-2"
                   >
                     <span>Proceed to Checkout</span>

@@ -39,20 +39,32 @@ export const CartProvider = ({ children }) => {
   }, [cartItems, restaurantId])
 
   const addToCart = (dish, quantity = 1) => {
+    console.log("[v0] Adding to cart:", {
+      dish: dish.name,
+      dishRestaurant: dish.restaurant,
+      currentRestaurantId: restaurantId,
+    })
+
+    const dishRestaurantId = dish.restaurant?._id || dish.restaurant
+
     // If adding from a different restaurant, clear cart
-    if (restaurantId && restaurantId !== dish.restaurant) {
+    if (restaurantId && restaurantId !== dishRestaurantId) {
+      console.log("[v0] Different restaurant detected, clearing cart")
       setCartItems([])
-      setRestaurantId(dish.restaurant)
+      setRestaurantId(dishRestaurantId)
     } else if (!restaurantId) {
-      setRestaurantId(dish.restaurant)
+      console.log("[v0] Setting initial restaurant ID")
+      setRestaurantId(dishRestaurantId)
     }
 
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item._id === dish._id)
 
       if (existingItem) {
+        console.log("[v0] Updating existing item quantity")
         return prevItems.map((item) => (item._id === dish._id ? { ...item, quantity: item.quantity + quantity } : item))
       } else {
+        console.log("[v0] Adding new item to cart")
         return [...prevItems, { ...dish, quantity }]
       }
     })
@@ -86,6 +98,11 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
   }
 
+  const setRestaurantContext = (id) => {
+    console.log("[v0] Setting restaurant context:", id)
+    setRestaurantId(id)
+  }
+
   const value = {
     cartItems,
     restaurantId,
@@ -95,6 +112,7 @@ export const CartProvider = ({ children }) => {
     clearCart,
     getTotalItems,
     getTotalPrice,
+    setRestaurantContext, // Added new method
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

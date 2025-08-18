@@ -25,6 +25,10 @@ const Checkout = () => {
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
   const [formErrors, setFormErrors] = useState({})
 
+  const searchParams = new URLSearchParams(window.location.search)
+  const isFromTracking = searchParams.get("from") === "tracking"
+  const originalOrderId = searchParams.get("originalOrder")
+
   useEffect(() => {
     // Load Razorpay script
     const script = document.createElement("script")
@@ -38,6 +42,14 @@ const Checkout = () => {
       }
     }
   }, [])
+
+  useEffect(() => {
+    console.log("[v0] Checkout page loaded:", {
+      restaurantId,
+      cartItemsCount: cartItems.length,
+      cartItems: cartItems.map((item) => ({ name: item.name, quantity: item.quantity })),
+    })
+  }, [restaurantId, cartItems])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -101,7 +113,14 @@ const Checkout = () => {
 
             clearCart()
             toast.success("Payment successful! Order placed.")
-            navigate(`/order/${order._id}`)
+
+            if (isFromTracking) {
+              window.open(`/order/${order._id}`, "_blank")
+              // Navigate back to original order
+              navigate(`/order/${originalOrderId}`)
+            } else {
+              navigate(`/order/${order._id}`)
+            }
           } catch (error) {
             toast.error("Payment verification failed")
           }
@@ -159,7 +178,14 @@ const Checkout = () => {
 
         clearCart()
         toast.success("Order placed successfully!")
-        navigate(`/order/${order._id}`)
+
+        if (isFromTracking) {
+          window.open(`/order/${order._id}`, "_blank")
+          // Navigate back to original order
+          navigate(`/order/${originalOrderId}`)
+        } else {
+          navigate(`/order/${order._id}`)
+        }
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Failed to place order"
@@ -179,14 +205,24 @@ const Checkout = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h1>
           <p className="text-gray-600 mb-6">Add some items to your cart before checkout</p>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleBack}
-            className="btn-primary"
-          >
-            Back to Menu
-          </motion.button>
+          <div className="space-y-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleBack}
+              className="btn-primary block w-full"
+            >
+              Back to Menu
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate(-1)}
+              className="text-gray-600 hover:text-gray-900 text-sm"
+            >
+              Go Back
+            </motion.button>
+          </div>
         </div>
       </div>
     )
