@@ -2,27 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ShoppingBag, Clock, User, Phone, MapPin, DollarSign, CheckCircle } from "lucide-react"
+import { ShoppingBag, Clock, User, Phone, MapPin, DollarSign, CheckCircle, Search, Filter, X } from "lucide-react"
 import axios from "axios"
 import useSocket from "../hooks/useSocket"
+import { toast } from "react-hot-toast"
 
-const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus }) => {
+const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-500 text-white"
       case "accepted":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-500 text-white"
       case "preparing":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-500 text-white"
       case "ready":
-        return "bg-green-100 text-green-800"
+        return "bg-green-500 text-white"
       case "completed":
-        return "bg-primary-100 text-primary-800"
+        return "bg-green-600 text-white"
       case "cancelled":
-        return "bg-red-100 text-red-800"
+        return "bg-red-500 text-white"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-500 text-white"
     }
   }
 
@@ -123,6 +124,18 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus }) => {
             </motion.button>
           )}
 
+          {["pending", "accepted"].includes(order.orderStatus) && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onCancelOrder(order._id)}
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm flex items-center"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </motion.button>
+          )}
+
           {nextStatus && order.orderStatus !== "completed" && order.orderStatus !== "cancelled" && (
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -159,27 +172,40 @@ const Orders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalOrders, setTotalOrders] = useState(0)
 
   const { on, off } = useSocket()
 
   useEffect(() => {
     fetchOrders()
-  }, [currentPage, statusFilter])
+  }, [currentPage, statusFilter, searchTerm])
 
   useEffect(() => {
-    on("new-order", (newOrder) => {
-      setOrders((prevOrders) => [newOrder, ...prevOrders])
-    })
+    const handleNewOrder = (newOrder) => {
+      setOrders((prevOrders) => {
+        // Check if order already exists to prevent duplicates
+        const exists = prevOrders.some((order) => order._id === newOrder._id)
+        if (exists) return prevOrders
 
-    on("order-status-updated", (updatedOrder) => {
+        toast.success(`New order received: ${newOrder.orderNumber}`)
+        return [newOrder, ...prevOrders]
+      })
+      setTotalOrders((prev) => prev + 1)
+    }
+
+    const handleOrderStatusUpdate = (updatedOrder) => {
       setOrders((prevOrders) => prevOrders.map((order) => (order._id === updatedOrder._id ? updatedOrder : order)))
-    })
+    }
+
+    on("new-order", handleNewOrder)
+    on("order-status-updated", handleOrderStatusUpdate)
 
     return () => {
-      off("new-order")
-      off("order-status-updated")
+      off("new-order", handleNewOrder)
+      off("order-status-updated", handleOrderStatusUpdate)
     }
   }, [on, off])
 
@@ -194,11 +220,17 @@ const Orders = () => {
         params.append("status", statusFilter)
       }
 
-      const response = await axios.get(`http://localhost:5000/api/orders/restaurant/my-orders?${params}`)
+      if (searchTerm.trim()) {
+        params.append("search", searchTerm.trim())
+      }
+
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/orders/restaurant/my-orders?${params}`)
       setOrders(response.data.orders)
       setTotalPages(response.data.totalPages)
+      setTotalOrders(response.data.totalOrders || response.data.orders.length)
     } catch (error) {
       console.error("Error fetching orders:", error)
+      toast.error("Failed to fetch orders")
     } finally {
       setLoading(false)
     }
@@ -206,36 +238,53 @@ const Orders = () => {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/${orderId}/status`, {
+      await axios.put(`${import.meta.env.VITE_BACKEND_API}/orders/${orderId}/status`, {
         status: newStatus,
       })
 
       setOrders(orders.map((order) => (order._id === orderId ? { ...order, orderStatus: newStatus } : order)))
+      toast.success(`Order status updated to ${newStatus}`)
     } catch (error) {
       console.error("Error updating order status:", error)
+      toast.error("Failed to update order status")
     }
   }
 
   const handleUpdatePaymentStatus = async (orderId, newPaymentStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/${orderId}/payment-status`, {
+      await axios.put(`${import.meta.env.VITE_BACKEND_API}/orders/${orderId}/payment-status`, {
         paymentStatus: newPaymentStatus,
       })
 
       setOrders(orders.map((order) => (order._id === orderId ? { ...order, paymentStatus: newPaymentStatus } : order)))
+      toast.success("Payment status updated")
     } catch (error) {
       console.error("Error updating payment status:", error)
+      toast.error("Failed to update payment status")
+    }
+  }
+
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm("Are you sure you want to cancel this order?")) return
+
+    try {
+      await axios.put(`${import.meta.env.VITE_BACKEND_API}/orders/${orderId}/cancel`)
+      setOrders(orders.map((order) => (order._id === orderId ? { ...order, orderStatus: "cancelled" } : order)))
+      toast.success("Order cancelled successfully")
+    } catch (error) {
+      console.error("Error cancelling order:", error)
+      toast.error("Failed to cancel order")
     }
   }
 
   const statusOptions = [
-    { value: "all", label: "All Orders" },
-    { value: "pending", label: "Pending" },
-    { value: "accepted", label: "Accepted" },
-    { value: "preparing", label: "Preparing" },
-    { value: "ready", label: "Ready" },
-    { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" },
+    { value: "all", label: "All Orders", color: "bg-gray-600" },
+    { value: "pending", label: "Pending", color: "bg-yellow-500" },
+    { value: "accepted", label: "Accepted", color: "bg-blue-500" },
+    { value: "preparing", label: "Preparing", color: "bg-purple-500" },
+    { value: "ready", label: "Ready", color: "bg-green-500" },
+    { value: "completed", label: "Completed", color: "bg-green-600" },
+    { value: "cancelled", label: "Cancelled", color: "bg-red-500" },
   ]
 
   if (loading) {
@@ -254,13 +303,34 @@ const Orders = () => {
           <p className="text-gray-600">Manage incoming orders and track their status</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-primary-600">{orders.length}</p>
-          <p className="text-sm text-gray-500">Orders This Page</p>
+          <p className="text-2xl font-bold text-primary-600">{totalOrders}</p>
+          <p className="text-sm text-gray-500">Total Orders</p>
         </div>
       </div>
 
-      {/* Status Filter */}
+      {/* Search and Filter */}
       <div className="card">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1 relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by order number, customer name, or phone..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="input pl-10 w-full"
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <span className="text-sm text-gray-600">Filter:</span>
+          </div>
+        </div>
+
+        {/* Status Filter */}
         <div className="flex flex-wrap gap-2">
           {statusOptions.map((option) => (
             <motion.button
@@ -271,10 +341,8 @@ const Orders = () => {
                 setStatusFilter(option.value)
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === option.value
-                  ? "bg-green-600 text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white ${
+                statusFilter === option.value ? option.color + " shadow-md" : "bg-gray-300 hover:bg-gray-400"
               }`}
             >
               {option.label}
@@ -291,30 +359,66 @@ const Orders = () => {
             order={order}
             onUpdateStatus={handleUpdateStatus}
             onUpdatePaymentStatus={handleUpdatePaymentStatus}
+            onCancelOrder={handleCancelOrder}
           />
         ))}
       </div>
 
-      {/* Pagination */}
+      {/* Enhanced Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center space-x-2">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="btn-secondary disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="flex items-center px-4 py-2 text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="btn-secondary disabled:opacity-50"
-          >
-            Next
-          </button>
+        <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+          <div className="text-sm text-gray-600">
+            Showing {(currentPage - 1) * 12 + 1} to {Math.min(currentPage * 12, totalOrders)} of {totalOrders} orders
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1 rounded text-sm ${
+                      currentPage === pageNum
+                        ? "bg-primary-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+              {totalPages > 5 && (
+                <>
+                  <span className="px-2 text-gray-500">...</span>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    className={`px-3 py-1 rounded text-sm ${
+                      currentPage === totalPages
+                        ? "bg-primary-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

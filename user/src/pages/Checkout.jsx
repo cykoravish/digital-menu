@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, CreditCard, Banknote, User, Phone, MapPin, MessageSquare } from "lucide-react"
 import { useCart } from "../contexts/CartContext"
 import axios from "axios"
+import { toast } from "react-hot-toast"
 
 const Checkout = () => {
   const { restaurantId } = useParams()
@@ -21,8 +22,8 @@ const Checkout = () => {
   })
 
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
 
   useEffect(() => {
     // Load Razorpay script
@@ -32,7 +33,9 @@ const Checkout = () => {
     document.body.appendChild(script)
 
     return () => {
-      document.body.removeChild(script)
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
     }
   }, [])
 
@@ -42,12 +45,36 @@ const Checkout = () => {
       ...formData,
       [name]: value,
     })
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: "",
+      })
+    }
+  }
+
+  const validateForm = () => {
+    const errors = {}
+
+    if (!formData.customerName.trim()) {
+      errors.customerName = "Name is required"
+    }
+
+    if (!formData.customerPhone.trim()) {
+      errors.customerPhone = "Phone number is required"
+    } else if (!/^[6-9]\d{9}$/.test(formData.customerPhone.trim())) {
+      errors.customerPhone = "Please enter a valid 10-digit Indian phone number"
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleRazorpayPayment = async (orderData) => {
     try {
       // Create Razorpay order
-      const paymentResponse = await axios.post("http://localhost:5000/api/orders/create-payment", {
+      const paymentResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/create-payment`, {
         amount: getTotalPrice(),
       })
 
@@ -61,11 +88,11 @@ const Checkout = () => {
         handler: async (response) => {
           try {
             // First create the order
-            const orderResponse = await axios.post("http://localhost:5000/api/orders", orderData)
+            const orderResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, orderData)
             const order = orderResponse.data.order
 
             // Then verify payment
-            await axios.post("http://localhost:5000/api/orders/verify-payment", {
+            await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/verify-payment`, {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -73,9 +100,10 @@ const Checkout = () => {
             })
 
             clearCart()
+            toast.success("Payment successful! Order placed.")
             navigate(`/order/${order._id}`)
           } catch (error) {
-            setError("Payment verification failed")
+            toast.error("Payment verification failed")
           }
         },
         prefill: {
@@ -89,18 +117,23 @@ const Checkout = () => {
 
       const rzp = new window.Razorpay(options)
       rzp.on("payment.failed", (response) => {
-        setError("Payment failed. Please try again.")
+        toast.error("Payment failed. Please try again.")
       })
       rzp.open()
     } catch (error) {
-      setError("Failed to initiate payment")
+      toast.error("Failed to initiate payment")
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields correctly")
+      return
+    }
+
     setLoading(true)
-    setError("")
 
     try {
       const orderData = {
@@ -114,21 +147,23 @@ const Checkout = () => {
 
       if (formData.paymentMethod === "upi") {
         if (!razorpayLoaded) {
-          setError("Payment system is loading. Please try again.")
+          toast.error("Payment system is loading. Please try again.")
           setLoading(false)
           return
         }
         await handleRazorpayPayment(orderData)
       } else {
         // Cash payment - create order directly
-        const response = await axios.post("http://localhost:5000/api/orders", orderData)
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, orderData)
         const order = response.data.order
 
         clearCart()
+        toast.success("Order placed successfully!")
         navigate(`/order/${order._id}`)
       }
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to place order")
+      const errorMessage = error.response?.data?.message || "Failed to place order"
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -213,33 +248,35 @@ const Checkout = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <User className="w-4 h-4 inline mr-2" />
-                Full Name
+                Full Name *
               </label>
               <input
                 type="text"
                 name="customerName"
                 value={formData.customerName}
                 onChange={handleChange}
-                className="input w-full"
+                className={`input w-full ${formErrors.customerName ? "border-red-500" : ""}`}
                 placeholder="Enter your name"
                 required
               />
+              {formErrors.customerName && <p className="text-red-500 text-sm mt-1">{formErrors.customerName}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Phone className="w-4 h-4 inline mr-2" />
-                Phone Number
+                Phone Number *
               </label>
               <input
                 type="tel"
                 name="customerPhone"
                 value={formData.customerPhone}
                 onChange={handleChange}
-                className="input w-full"
+                className={`input w-full ${formErrors.customerPhone ? "border-red-500" : ""}`}
                 placeholder="Enter your phone number"
                 required
               />
+              {formErrors.customerPhone && <p className="text-red-500 text-sm mt-1">{formErrors.customerPhone}</p>}
             </div>
 
             <div>
@@ -330,16 +367,6 @@ const Checkout = () => {
             </motion.label>
           </div>
         </motion.div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600"
-          >
-            {error}
-          </motion.div>
-        )}
 
         {/* Place Order Button */}
         <motion.button

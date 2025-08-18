@@ -35,7 +35,7 @@ const Analytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/superadmin/analytics")
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/superadmin/analytics`)
       setAnalyticsData(response.data)
     } catch (error) {
       console.error("Error fetching analytics:", error)
@@ -161,7 +161,7 @@ const Analytics = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card text-center">
           <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-4" />
           <h3 className="text-2xl font-bold text-white mb-2">
-            ${analyticsData.monthlyRevenue.reduce((sum, month) => sum + month.revenue, 0).toLocaleString()}
+            ₹{analyticsData.monthlyRevenue.reduce((sum, month) => sum + month.revenue, 0).toLocaleString()}
           </h3>
           <p className="text-gray-400">Total Revenue (12 months)</p>
         </motion.div>

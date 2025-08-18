@@ -108,11 +108,19 @@ router.get("/restaurant/my-orders", auth, adminAuth, async (req, res) => {
       return res.status(400).json({ message: "No restaurant found" })
     }
 
-    const { status, page = 1, limit = 20 } = req.query
+    const { status, search, page = 1, limit = 20 } = req.query
     const query = { restaurant: req.user.restaurant._id }
 
     if (status) {
       query.orderStatus = status
+    }
+
+    if (search) {
+      query.$or = [
+        { orderNumber: { $regex: search, $options: "i" } },
+        { customerName: { $regex: search, $options: "i" } },
+        { customerPhone: { $regex: search, $options: "i" } },
+      ]
     }
 
     const orders = await Order.find(query)
@@ -127,6 +135,7 @@ router.get("/restaurant/my-orders", auth, adminAuth, async (req, res) => {
       orders,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
+      totalOrders: total,
     })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })
@@ -157,9 +166,43 @@ router.put("/:id/status", auth, adminAuth, async (req, res) => {
     // Emit real-time update
     const io = req.app.get("io")
     io.to(`order-${order._id}`).emit("order-status-updated", updatedOrder)
+    io.to(`restaurant-${order.restaurant}`).emit("order-status-updated", updatedOrder)
 
     res.json({
       message: "Order status updated successfully",
+      order: updatedOrder,
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
+router.put("/:id/cancel", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" })
+    }
+
+    // Only allow cancellation for pending or accepted orders
+    if (!["pending", "accepted"].includes(order.orderStatus)) {
+      return res.status(400).json({ message: "Order cannot be cancelled at this stage" })
+    }
+
+    order.orderStatus = "cancelled"
+    await order.save()
+
+    const updatedOrder = await Order.findById(order._id)
+      .populate("items.dish", "name price image")
+      .populate("restaurant", "name")
+
+    // Emit real-time update
+    const io = req.app.get("io")
+    io.to(`order-${order._id}`).emit("order-status-updated", updatedOrder)
+    io.to(`restaurant-${order.restaurant}`).emit("order-status-updated", updatedOrder)
+
+    res.json({
+      message: "Order cancelled successfully",
       order: updatedOrder,
     })
   } catch (error) {

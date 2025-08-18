@@ -55,7 +55,7 @@ const RestaurantCard = ({ restaurant }) => (
             <p className="text-xs text-gray-400">Total Orders</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-400">${restaurant.totalRevenue}</p>
+            <p className="text-2xl font-bold text-green-400">₹{restaurant.totalRevenue}</p>
             <p className="text-xs text-gray-400">Revenue</p>
           </div>
         </div>
@@ -88,7 +88,7 @@ const Restaurants = () => {
 
   const fetchRestaurants = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/restaurants")
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/restaurants`)
       setRestaurants(response.data.restaurants)
     } catch (error) {
       console.error("Error fetching restaurants:", error)

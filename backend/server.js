@@ -11,6 +11,7 @@ import restaurantRoutes from "./routes/restaurants.js"
 import dishRoutes from "./routes/dishes.js"
 import orderRoutes from "./routes/orders.js"
 import superadminRoutes from "./routes/superadmin.js"
+import subscriptionRoutes from "./routes/subscriptions.js"
 
 dotenv.config()
 
@@ -18,7 +19,7 @@ const app = express()
 const server = http.createServer(app)
 const io = new SocketIOServer(server, {
   cors: {
-    origin: [process.env.SUPERADMIN_FRONTEND_URL, process.env.ADMIN_FRONTEND_URL, process.env.USER_FRONTEND_URL],
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
     methods: ["GET", "POST"],
   },
 })
@@ -26,7 +27,7 @@ const io = new SocketIOServer(server, {
 // Middleware
 app.use(
   cors({
-    origin: [process.env.SUPERADMIN_FRONTEND_URL, process.env.ADMIN_FRONTEND_URL, process.env.USER_FRONTEND_URL],
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
     credentials: true,
   }),
 )
@@ -79,6 +80,7 @@ app.use("/api/restaurants", restaurantRoutes)
 app.use("/api/dishes", dishRoutes)
 app.use("/api/orders", orderRoutes)
 app.use("/api/superadmin", superadminRoutes)
+app.use("/api/subscriptions", subscriptionRoutes)
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -91,7 +93,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err))
 
-const PORT = process.env.PORT || 6000
+const PORT = process.env.PORT || 5000
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

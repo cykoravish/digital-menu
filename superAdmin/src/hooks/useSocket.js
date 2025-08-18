@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import io from "socket.io-client"
 
-const useSocket = (serverPath = "http://localhost:5000") => {
+const useSocket = (serverPath = import.meta.env.VITE_SOCKET_URL) => {
   const socketRef = useRef(null)
 
   useEffect(() => {

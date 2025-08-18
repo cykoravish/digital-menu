@@ -77,7 +77,7 @@ const DishCard = ({ dish, onAddToCart }) => {
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-bold text-gray-900 text-lg leading-tight">{dish.name}</h3>
           <div className="text-right">
-            <div className="text-xl font-bold text-orange-600">${dish.price}</div>
+            <div className="text-xl font-bold text-orange-600">₹{dish.price}</div>
           </div>
         </div>
 
@@ -140,11 +140,11 @@ const Menu = () => {
   const fetchRestaurantData = async () => {
     try {
       // Fetch restaurant info
-      const restaurantResponse = await axios.get(`http://localhost:5000/api/restaurants/${restaurantId}`)
+      const restaurantResponse = await axios.get(`${import.meta.env.VITE_BACKEND_API}/restaurants/${restaurantId}`)
       setRestaurant(restaurantResponse.data.restaurant)
 
       // Fetch dishes
-      const dishesResponse = await axios.get(`http://localhost:5000/api/dishes/restaurant/${restaurantId}`)
+      const dishesResponse = await axios.get(`${import.meta.env.VITE_BACKEND_API}/dishes/restaurant/${restaurantId}`)
       const dishesData = dishesResponse.data.dishes
       setDishes(dishesData)
 

@@ -73,6 +73,22 @@ router.get("/:id", async (req, res) => {
   }
 })
 
+router.get("/:id/ad-status", async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id).populate("owner")
+
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" })
+    }
+
+    const hasPremium = restaurant.owner?.hasPremiumSubscription() || false
+
+    res.json({ hasPremium })
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
 // Update restaurant
 router.put("/:id", auth, adminAuth, uploadRestaurantImage.single("image"), async (req, res) => {
   try {
