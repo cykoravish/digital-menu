@@ -148,11 +148,11 @@ const DishModal = ({ dish, isOpen, onClose, onSave }) => {
 
       let response
       if (dish) {
-        response = await axios.put(`http://localhost:5000/api/dishes/${dish._id}`, submitData, {
+        response = await axios.put(`${import.meta.env.VITE_BACKEND_API}/dishes/${dish._id}`, submitData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
       } else {
-        response = await axios.post("http://localhost:5000/api/dishes", submitData, {
+        response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/dishes`, submitData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
       }
@@ -353,7 +353,7 @@ const Dishes = () => {
 
   const fetchDishes = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/dishes/my-dishes")
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/dishes/my-dishes`)
       setDishes(response.data.dishes)
     } catch (error) {
       console.error("Error fetching dishes:", error)
@@ -389,7 +389,7 @@ const Dishes = () => {
   const handleDeleteDish = async (dishId) => {
     if (window.confirm("Are you sure you want to delete this dish?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/dishes/${dishId}`)
+        await axios.delete(`${import.meta.env.VITE_BACKEND_API}/dishes/${dishId}`)
         setDishes(dishes.filter((dish) => dish._id !== dishId))
       } catch (error) {
         console.error("Error deleting dish:", error)

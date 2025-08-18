@@ -62,11 +62,11 @@ const Analytics = () => {
   const fetchAnalytics = async () => {
     try {
       // Fetch restaurant orders for analytics
-      const ordersResponse = await axios.get("http://localhost:5000/api/orders/restaurant/my-orders?limit=100")
+      const ordersResponse = await axios.get(`${import.meta.env.VITE_BACKEND_API}/orders/restaurant/my-orders?limit=100`)
       const orders = ordersResponse.data.orders
 
       // Fetch dishes
-      const dishesResponse = await axios.get("http://localhost:5000/api/dishes/my-dishes")
+      const dishesResponse = await axios.get(`${import.meta.env.VITE_BACKEND_API}/dishes/my-dishes`)
       const dishes = dishesResponse.data.dishes
 
       // Calculate analytics

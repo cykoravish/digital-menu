@@ -57,7 +57,7 @@ const OrderTracking = () => {
   }, [order, setRestaurantContext])
 
   const setupSocket = () => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000"
+    const socketUrl = import.meta.env.VITE_SOCKET_URL
     console.log("[v0] Connecting to socket server:", socketUrl)
 
     const newSocket = io(socketUrl, {

@@ -84,7 +84,7 @@ const Admins = () => {
 
   const fetchAdmins = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/superadmin/admins")
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/superadmin/admins`)
       setAdmins(response.data.admins)
     } catch (error) {
       console.error("Error fetching admins:", error)
@@ -95,7 +95,7 @@ const Admins = () => {
 
   const handleToggleBlock = async (adminId, isCurrentlyBlocked) => {
     try {
-      await axios.put(`http://localhost:5000/api/superadmin/admins/${adminId}/toggle-block`)
+      await axios.put(`${import.meta.env.VITE_BACKEND_API}/superadmin/admins/${adminId}/toggle-block`)
 
       setAdmins(admins.map((admin) => (admin._id === adminId ? { ...admin, isBlocked: !isCurrentlyBlocked } : admin)))
     } catch (error) {
