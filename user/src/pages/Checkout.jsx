@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, CreditCard, Banknote, User, Phone, MapPin, MessageSquare } from "lucide-react"
 import { useCart } from "../contexts/CartContext"
+import AdBanner from "../components/AdBanner"
 import axios from "axios"
 import { toast } from "react-hot-toast"
 
@@ -418,6 +419,9 @@ const Checkout = () => {
           {loading ? "Placing Order..." : `Place Order • ₹${getTotalPrice().toFixed(2)}`}
         </motion.button>
       </div>
+
+      {/* AdBanner for checkout page to show ads for free plan restaurants */}
+      <AdBanner restaurantId={restaurantId} placement="checkout" />
     </div>
   )
 }

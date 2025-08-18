@@ -25,70 +25,86 @@ router.get("/current", auth, adminAuth, async (req, res) => {
   }
 })
 
-// Create premium subscription
+// Create premium subscription payment
 router.post("/create-premium", auth, adminAuth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        message: "Razorpay configuration missing",
+        error: "RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET not configured",
+      })
+    }
 
-    // Create Razorpay subscription
-    const subscription = await razorpay.subscriptions.create({
-      plan_id: process.env.RAZORPAY_PREMIUM_PLAN_ID, // You need to create this plan in Razorpay dashboard
-      customer_notify: 1,
-      quantity: 1,
-      total_count: 12, // 12 months
-      addons: [],
+    // Create a one-time payment order for premium subscription (₹199)
+    const options = {
+      amount: 19900, // ₹199 in paise
+      // amount: 100,
+      currency: "INR",
+      receipt: `premium_${Date.now()}`,
       notes: {
-        userId: user._id.toString(),
-        email: user.email,
+        plan_type: "premium",
+        user_id: req.user.id,
+        description: "Premium Restaurant Plan - Monthly Subscription",
       },
-    })
+    }
+
+    const order = await razorpay.orders.create(options)
 
     res.json({
-      subscriptionId: subscription.id,
-      amount: 19900, // ₹199 in paise
-      currency: "INR",
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
       name: "Premium Plan",
-      description: "Ad-free experience for your restaurant",
+      description: "Ad-free experience for your restaurant - Monthly subscription",
       prefill: {
-        name: user.name,
-        email: user.email,
+        name: req.user.name,
+        email: req.user.email,
       },
     })
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message })
+    console.error("Create premium payment error:", error)
+    res.status(500).json({
+      message: "Failed to create premium payment",
+      error: error.message,
+    })
   }
 })
 
 // Verify premium subscription payment
 router.post("/verify-premium", auth, adminAuth, async (req, res) => {
   try {
-    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
 
     // Verify signature
-    const body = razorpay_payment_id + "|" + razorpay_subscription_id
+    const body = razorpay_order_id + "|" + razorpay_payment_id
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest("hex")
 
     if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ message: "Invalid signature" })
+      return res.status(400).json({ message: "Invalid payment signature" })
     }
 
-    // Update user subscription
+    // Update user subscription to premium for 30 days
     const user = await User.findById(req.user.id)
     user.subscription = {
       plan: "premium",
       status: "active",
       startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      razorpaySubscriptionId: razorpay_subscription_id,
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
       lastPaymentDate: new Date(),
     }
     await user.save()
 
-    res.json({ message: "Subscription activated successfully", subscription: user.subscription })
+    res.json({
+      message: "Premium subscription activated successfully",
+      subscription: user.subscription,
+    })
   } catch (error) {
+    console.error("Verify premium payment error:", error)
     res.status(500).json({ message: "Server error", error: error.message })
   }
 })
@@ -98,18 +114,14 @@ router.post("/cancel", auth, adminAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
 
-    if (user.subscription.razorpaySubscriptionId) {
-      // Cancel Razorpay subscription
-      await razorpay.subscriptions.cancel(user.subscription.razorpaySubscriptionId)
-    }
-
     // Update user subscription to free
     user.subscription = {
       plan: "free",
       status: "active",
       startDate: new Date(),
       endDate: new Date("2099-12-31"),
-      razorpaySubscriptionId: null,
+      razorpayOrderId: null,
+      razorpayPaymentId: null,
       lastPaymentDate: null,
     }
     await user.save()

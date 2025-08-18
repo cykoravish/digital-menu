@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom"
 import { ShoppingCart, Plus, Minus, Star, Clock, Leaf, Flame, UtensilsCrossed } from "lucide-react"
 import { useCart } from "../contexts/CartContext"
 import Cart from "../components/Cart"
+import AdBanner from "../components/AdBanner"
 import axios from "axios"
 
 const DishCard = ({ dish, onAddToCart }) => {
@@ -307,6 +308,9 @@ const Menu = () => {
 
       {/* Cart Sidebar */}
       <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} restaurant={restaurant} />
+
+      {/* AdBanner for menu page to show ads for free plan restaurants */}
+      {restaurant && !restaurant.blocked && <AdBanner restaurantId={restaurantId} placement="menu" />}
     </div>
   )
 }

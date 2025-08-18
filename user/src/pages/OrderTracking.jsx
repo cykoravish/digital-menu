@@ -22,6 +22,7 @@ import io from "socket.io-client"
 import { toast } from "react-hot-toast"
 import jsPDF from "jspdf"
 import { useCart } from "../contexts/CartContext"
+import AdBanner from "../components/AdBanner"
 
 const OrderTracking = () => {
   const { orderId } = useParams()
@@ -362,8 +363,6 @@ const OrderTracking = () => {
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-6">
-        {/* ... existing code for order status, restaurant info, order details ... */}
-
         {/* Order Status */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
           <div className="text-center mb-6">
@@ -757,6 +756,8 @@ const OrderTracking = () => {
           </motion.div>
         </div>
       )}
+
+      {order?.restaurant?._id && <AdBanner restaurantId={order.restaurant._id} placement="tracking" />}
     </div>
   )
 }

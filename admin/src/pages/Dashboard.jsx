@@ -216,18 +216,26 @@ const Dashboard = () => {
   const handleUpgradeToPremium = async () => {
     setSubscriptionLoading(true)
     try {
+      const scriptLoaded = await loadRazorpayScript()
+      if (!scriptLoaded) {
+        toast.error("Failed to load payment gateway. Please try again.")
+        return
+      }
+
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/subscriptions/create-premium`)
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        subscription_id: response.data.subscriptionId,
-        name: "Restaurant Premium Plan",
+        amount: response.data.amount,
+        currency: response.data.currency,
+        order_id: response.data.orderId,
+        name: response.data.name,
         description: response.data.description,
         handler: async (response) => {
           try {
             await axios.post(`${import.meta.env.VITE_BACKEND_API}/subscriptions/verify-premium`, {
+              razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_subscription_id: response.razorpay_subscription_id,
               razorpay_signature: response.razorpay_signature,
             })
 
@@ -239,14 +247,20 @@ const Dashboard = () => {
         },
         prefill: response.data.prefill,
         theme: {
-          color: "#22c55e",
+          color: "#eab308",
         },
       }
 
       const rzp = new window.Razorpay(options)
+      rzp.on("payment.failed", (response) => {
+        toast.error("Payment failed. Please try again.")
+        console.error("Payment failed:", response.error)
+      })
       rzp.open()
     } catch (error) {
-      toast.error("Failed to initiate subscription")
+      const errorMessage = error.response?.data?.message || "Failed to initiate subscription"
+      toast.error(errorMessage)
+      console.error("Subscription error:", error)
     } finally {
       setSubscriptionLoading(false)
     }
@@ -274,6 +288,21 @@ const Dashboard = () => {
       link.download = `${restaurant.name}-qr-code.png`
       link.click()
     }
+  }
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true)
+        return
+      }
+
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
   }
 
   if (loading) {

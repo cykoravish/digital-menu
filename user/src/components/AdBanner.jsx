@@ -2,35 +2,79 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, ExternalLink, Star, Zap } from "lucide-react"
+import { X, ExternalLink, Star } from "lucide-react"
 
-const AdBanner = ({ restaurantId }) => {
+const AdBanner = ({ restaurantId, placement = "menu" }) => {
   const [showAd, setShowAd] = useState(false)
   const [adData, setAdData] = useState(null)
+  const [currentAdIndex, setCurrentAdIndex] = useState(0)
+
+  const adVariations = [
+    {
+      id: 1,
+      title: "Boost Your Restaurant Sales",
+      description: "Join 10,000+ restaurants increasing orders by 45% with our platform",
+      buttonText: "Start Free Trial",
+      link: "https://yourplatform.com/signup",
+      image: "/placeholder.svg?height=80&width=80",
+      features: ["No Setup Fees", "24/7 Support", "Real-time Analytics"],
+      gradient: "from-emerald-500 to-teal-600",
+      icon: "📈",
+    },
+    {
+      id: 2,
+      title: "Get More Food Orders",
+      description: "Smart ordering system that brings hungry customers to your restaurant",
+      buttonText: "Get Started",
+      link: "https://yourplatform.com/demo",
+      image: "/placeholder.svg?height=80&width=80",
+      features: ["Zero Commission", "Instant Setup", "Mobile Optimized"],
+      gradient: "from-orange-500 to-red-600",
+      icon: "🍽️",
+    },
+    {
+      id: 3,
+      title: "Digital Menu Revolution",
+      description: "Transform your restaurant with QR code menus and contactless ordering",
+      buttonText: "Try Now",
+      link: "https://yourplatform.com/qr-menu",
+      image: "/placeholder.svg?height=80&width=80",
+      features: ["QR Code Menus", "Online Payments", "Order Management"],
+      gradient: "from-purple-500 to-indigo-600",
+      icon: "📱",
+    },
+    {
+      id: 4,
+      title: "Restaurant Success Kit",
+      description: "Everything you need to grow your food business in the digital age",
+      buttonText: "Learn More",
+      link: "https://yourplatform.com/success-kit",
+      image: "/placeholder.svg?height=80&width=80",
+      features: ["Marketing Tools", "Customer Insights", "Growth Analytics"],
+      gradient: "from-blue-500 to-cyan-600",
+      icon: "🚀",
+    },
+  ]
 
   useEffect(() => {
     checkAdStatus()
+    const rotationInterval = setInterval(() => {
+      setCurrentAdIndex((prev) => (prev + 1) % adVariations.length)
+    }, 30000)
+
+    return () => clearInterval(rotationInterval)
   }, [restaurantId])
 
   const checkAdStatus = async () => {
     try {
-      // Check if restaurant owner has premium subscription
       const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/restaurants/${restaurantId}/ad-status`)
       const data = await response.json()
 
-      // Only show ad if restaurant doesn't have premium and user hasn't closed it this session
-      const adClosed = localStorage.getItem(`ad-closed-${restaurantId}`)
+      const adClosed = localStorage.getItem(`ad-closed-${restaurantId}-${placement}`)
       if (!data.hasPremium && !adClosed) {
-        setAdData({
-          title: "Grow Your Restaurant Business",
-          description: "Join thousands of restaurants using our platform to increase orders and revenue by 40%",
-          buttonText: "Start Free Trial",
-          link: "https://yourplatform.com/signup",
-          image: "/placeholder.svg?height=80&width=80",
-          features: ["No Setup Fees", "24/7 Support", "Real-time Analytics"],
-        })
-        // Show ad after a short delay for better UX
-        setTimeout(() => setShowAd(true), 2000)
+        setAdData(adVariations[currentAdIndex])
+        const delay = placement === "menu" ? 3000 : placement === "checkout" ? 1000 : 5000
+        setTimeout(() => setShowAd(true), delay)
       }
     } catch (error) {
       console.error("Error checking ad status:", error)
@@ -39,51 +83,66 @@ const AdBanner = ({ restaurantId }) => {
 
   const handleClose = () => {
     setShowAd(false)
-    // Store in localStorage to not show again for this session
-    localStorage.setItem(`ad-closed-${restaurantId}`, "true")
+    localStorage.setItem(`ad-closed-${restaurantId}-${placement}`, "true")
   }
 
   const handleAdClick = () => {
     window.open(adData.link, "_blank")
-    // Track ad click if needed
-    console.log("Ad clicked for restaurant:", restaurantId)
+    console.log("Ad clicked:", adData.title, "Placement:", placement)
   }
 
+  useEffect(() => {
+    if (showAd) {
+      setAdData(adVariations[currentAdIndex])
+    }
+  }, [currentAdIndex, showAd])
+
   if (!showAd || !adData) return null
+
+  const getAdLayout = () => {
+    switch (placement) {
+      case "checkout":
+        return "fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80"
+      case "tracking":
+        return "fixed bottom-20 left-4 right-4 md:left-4 md:w-72"
+      default: // menu
+        return "fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96"
+    }
+  }
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: 100, scale: 0.9 }}
+        initial={{ opacity: 0, y: placement === "checkout" ? -100 : 100, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 100, scale: 0.9 }}
+        exit={{ opacity: 0, y: placement === "checkout" ? -100 : 100, scale: 0.9 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-2xl z-50 overflow-hidden"
+        className={`${getAdLayout()} bg-gradient-to-br ${adData.gradient} rounded-xl shadow-2xl z-50 overflow-hidden`}
       >
-        <div className="relative p-6">
+        <div className="relative p-4 md:p-6">
           <button
             onClick={handleClose}
-            className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
+            className="absolute top-2 right-2 md:top-3 md:right-3 text-white/80 hover:text-white transition-colors z-10"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 md:w-5 md:h-5" />
           </button>
 
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-3 md:space-x-4">
             <div className="flex-shrink-0">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
-                <Zap className="w-8 h-8 text-white" />
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl md:text-3xl">
+                {adData.icon}
               </div>
             </div>
 
-            <div className="flex-1 text-white">
-              <h3 className="font-bold text-lg mb-1">{adData.title}</h3>
-              <p className="text-white/90 text-sm mb-3">{adData.description}</p>
+            <div className="flex-1 text-white min-w-0">
+              <h3 className="font-bold text-base md:text-lg mb-1 leading-tight">{adData.title}</h3>
+              <p className="text-white/90 text-xs md:text-sm mb-3 leading-relaxed">{adData.description}</p>
 
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-1 md:gap-2 mb-3 md:mb-4">
                 {adData.features.map((feature, index) => (
                   <div key={index} className="flex items-center space-x-1 text-xs bg-white/20 rounded-full px-2 py-1">
-                    <Star className="w-3 h-3" />
-                    <span>{feature}</span>
+                    <Star className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                    <span className="text-xs">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -92,17 +151,27 @@ const AdBanner = ({ restaurantId }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAdClick}
-                className="bg-white text-orange-600 px-4 py-2 rounded-lg font-semibold text-sm flex items-center space-x-2 hover:bg-orange-50 transition-colors"
+                className="bg-white text-gray-800 px-3 py-2 md:px-4 md:py-2 rounded-lg font-semibold text-xs md:text-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors w-full md:w-auto justify-center"
               >
                 <span>{adData.buttonText}</span>
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
               </motion.button>
             </div>
           </div>
 
-          {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-8 -translate-x-8"></div>
+          <div className="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-full -translate-y-8 md:-translate-y-10 translate-x-8 md:translate-x-10"></div>
+          <div className="absolute bottom-0 left-0 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full translate-y-6 md:translate-y-8 -translate-x-6 md:-translate-x-8"></div>
+
+          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
+            {adVariations.map((_, index) => (
+              <div
+                key={index}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentAdIndex ? "bg-white" : "bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>
