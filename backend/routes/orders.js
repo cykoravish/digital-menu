@@ -250,6 +250,7 @@ router.post("/verify-payment", async (req, res) => {
   }
 })
 
+// Update payment status (admin)
 router.put("/:id/payment-status", auth, adminAuth, async (req, res) => {
   try {
     const { paymentStatus } = req.body
@@ -269,6 +270,10 @@ router.put("/:id/payment-status", auth, adminAuth, async (req, res) => {
     const updatedOrder = await Order.findById(order._id)
       .populate("items.dish", "name price image")
       .populate("restaurant", "name")
+
+    const io = req.app.get("io")
+    io.to(`order-${order._id}`).emit("payment-status-updated", updatedOrder)
+    io.to(`restaurant-${order.restaurant}`).emit("payment-status-updated", updatedOrder)
 
     res.json({
       message: "Payment status updated successfully",

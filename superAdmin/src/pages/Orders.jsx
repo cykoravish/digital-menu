@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ShoppingBag, Clock, DollarSign, User, Phone } from "lucide-react"
+import { ShoppingBag, Clock, User, Phone } from "lucide-react"
 import axios from "axios"
 
 const OrderCard = ({ order }) => (
@@ -51,7 +51,7 @@ const OrderCard = ({ order }) => (
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-400">{order.items?.length} items</div>
         <div className="flex items-center text-lg font-bold text-white">
-          <DollarSign className="w-5 h-5 mr-1" />
+          <span className="mr-1">₹</span>
           {order.totalAmount}
         </div>
       </div>
@@ -87,7 +87,7 @@ const Orders = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/orders?page=${currentPage}&limit=12`)
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/orders?page=${currentPage}&limit=12`)
       setOrders(response.data.orders)
       setTotalPages(response.data.totalPages)
     } catch (error) {

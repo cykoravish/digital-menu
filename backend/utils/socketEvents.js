@@ -4,6 +4,7 @@ const socketEvents = {
   ORDER_CREATED: "order-created",
   ORDER_STATUS_UPDATED: "order-status-updated",
   ORDER_CANCELLED: "order-cancelled",
+  PAYMENT_STATUS_UPDATED: "payment-status-updated", // Added payment status update event
 
   // Restaurant events
   RESTAURANT_STATUS_UPDATED: "restaurant-status-updated",
