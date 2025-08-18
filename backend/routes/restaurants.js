@@ -9,7 +9,7 @@ const router = express.Router()
 // Create restaurant
 router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (req, res) => {
   try {
-    const { name, description, address, phone, email } = req.body
+    const { name, description, address, phone, email, upiDetails } = req.body
 
     // Check if user already has a restaurant
     const existingRestaurant = await Restaurant.findOne({ owner: req.user._id })
@@ -22,6 +22,17 @@ router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (
       imageUrl = req.file.path // Cloudinary URL is available in req.file.path
     }
 
+    let parsedUpiDetails = {}
+    if (upiDetails && typeof upiDetails === "string") {
+      try {
+        parsedUpiDetails = JSON.parse(upiDetails)
+      } catch (error) {
+        parsedUpiDetails = {}
+      }
+    } else if (upiDetails && typeof upiDetails === "object") {
+      parsedUpiDetails = upiDetails
+    }
+
     const restaurant = new Restaurant({
       name,
       description,
@@ -30,6 +41,7 @@ router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (
       email,
       image: imageUrl,
       owner: req.user._id,
+      upiDetails: parsedUpiDetails,
     })
 
     await restaurant.save()
@@ -109,6 +121,14 @@ router.put("/:id", auth, adminAuth, uploadRestaurantImage.single("image"), async
         updateData.openingHours = JSON.parse(updateData.openingHours)
       } catch (error) {
         return res.status(400).json({ message: "Invalid opening hours format" })
+      }
+    }
+
+    if (updateData.upiDetails && typeof updateData.upiDetails === "string") {
+      try {
+        updateData.upiDetails = JSON.parse(updateData.upiDetails)
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid UPI details format" })
       }
     }
 

@@ -67,6 +67,22 @@ const restaurantSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    upiDetails: {
+      upiId: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      merchantName: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      isUpiEnabled: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     timestamps: true,

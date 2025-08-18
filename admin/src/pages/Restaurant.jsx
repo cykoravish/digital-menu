@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Store, Clock, Camera, Save, Edit } from "lucide-react"
+import { Store, Clock, Camera, Save, Edit, CreditCard } from "lucide-react"
 import { useAuth } from "../hooks/useAuth"
 import axios from "axios"
 
@@ -17,6 +17,11 @@ const Restaurant = () => {
     phone: "",
     email: "",
     isOpen: false,
+  })
+  const [upiDetails, setUpiDetails] = useState({
+    upiId: "",
+    merchantName: "",
+    isUpiEnabled: false,
   })
   const [openingHours, setOpeningHours] = useState({
     monday: { open: "09:00", close: "22:00", isOpen: true },
@@ -39,7 +44,7 @@ const Restaurant = () => {
 
   const fetchRestaurant = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/restaurants/${user.restaurant._id}`)
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/restaurants/${user.restaurant._id}`)
       const restaurantData = response.data.restaurant
       setRestaurant(restaurantData)
       setFormData({
@@ -49,6 +54,11 @@ const Restaurant = () => {
         phone: restaurantData.phone || "",
         email: restaurantData.email || "",
         isOpen: restaurantData.isOpen || false,
+      })
+      setUpiDetails({
+        upiId: restaurantData.upiDetails?.upiId || "",
+        merchantName: restaurantData.upiDetails?.merchantName || "",
+        isUpiEnabled: restaurantData.upiDetails?.isUpiEnabled || false,
       })
       if (restaurantData.openingHours && typeof restaurantData.openingHours === "object") {
         const defaultHours = {
@@ -83,6 +93,14 @@ const Restaurant = () => {
     })
   }
 
+  const handleUpiChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setUpiDetails({
+      ...upiDetails,
+      [name]: type === "checkbox" ? checked : value,
+    })
+  }
+
   const handleHoursChange = (day, field, value) => {
     setOpeningHours((prev) => ({
       ...prev,
@@ -111,6 +129,7 @@ const Restaurant = () => {
         submitData.append(key, formData[key])
       })
       submitData.append("openingHours", JSON.stringify(openingHours))
+      submitData.append("upiDetails", JSON.stringify(upiDetails))
 
       if (selectedImage) {
         submitData.append("image", selectedImage)
@@ -119,12 +138,12 @@ const Restaurant = () => {
       let response
       if (restaurant) {
         // Update existing restaurant
-        response = await axios.put(`http://localhost:5000/api/restaurants/${restaurant._id}`, submitData, {
+        response = await axios.put(`${import.meta.env.VITE_BACKEND_API}/restaurants/${restaurant._id}`, submitData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
       } else {
         // Create new restaurant
-        response = await axios.post("http://localhost:5000/api/restaurants", submitData, {
+        response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/restaurants`, submitData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
       }
@@ -261,6 +280,70 @@ const Restaurant = () => {
                 disabled={restaurant && !isEditing}
               />
             </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+            <CreditCard className="w-6 h-6 mr-2 text-green-600" />
+            UPI Payment Configuration
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="isUpiEnabled"
+                checked={upiDetails.isUpiEnabled}
+                onChange={handleUpiChange}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                disabled={restaurant && !isEditing}
+              />
+              <label className="ml-2 text-sm text-gray-700">Enable UPI payments for customers</label>
+            </div>
+
+            {upiDetails.isUpiEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID *</label>
+                  <input
+                    type="text"
+                    name="upiId"
+                    value={upiDetails.upiId}
+                    onChange={handleUpiChange}
+                    className="input w-full"
+                    placeholder="yourname@paytm / yourname@phonepe"
+                    required={upiDetails.isUpiEnabled}
+                    disabled={restaurant && !isEditing}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter your UPI ID where payments will be received</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Merchant Name *</label>
+                  <input
+                    type="text"
+                    name="merchantName"
+                    value={upiDetails.merchantName}
+                    onChange={handleUpiChange}
+                    className="input w-full"
+                    placeholder="Restaurant Name or Owner Name"
+                    required={upiDetails.isUpiEnabled}
+                    disabled={restaurant && !isEditing}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Name that will appear in customer's payment app</p>
+                </div>
+              </div>
+            )}
+
+            {!upiDetails.isUpiEnabled && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Note:</strong> Enable UPI payments to allow customers to pay directly to your UPI account.
+                  This eliminates the need for cash handling and provides instant payment confirmation.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

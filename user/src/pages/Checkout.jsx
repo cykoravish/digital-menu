@@ -23,7 +23,7 @@ const Checkout = () => {
   })
 
   const [loading, setLoading] = useState(false)
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+  const [restaurant, setRestaurant] = useState(null)
   const [formErrors, setFormErrors] = useState({})
 
   const searchParams = new URLSearchParams(window.location.search)
@@ -31,18 +31,17 @@ const Checkout = () => {
   const originalOrderId = searchParams.get("originalOrder")
 
   useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement("script")
-    script.src = "https://checkout.razorpay.com/v1/checkout.js"
-    script.onload = () => setRazorpayLoaded(true)
-    document.body.appendChild(script)
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
+    const fetchRestaurant = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/restaurants/${restaurantId}`)
+        setRestaurant(response.data.restaurant)
+      } catch (error) {
+        console.error("Failed to fetch restaurant details:", error)
       }
     }
-  }, [])
+
+    fetchRestaurant()
+  }, [restaurantId])
 
   useEffect(() => {
     console.log("[v0] Checkout page loaded:", {
@@ -84,64 +83,46 @@ const Checkout = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handleRazorpayPayment = async (orderData) => {
+  const handleUpiPayment = async (orderData) => {
     try {
-      // Create Razorpay order
-      const paymentResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/create-payment`, {
-        amount: getTotalPrice(),
-      })
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_your_key_id",
-        amount: paymentResponse.data.order.amount,
-        currency: paymentResponse.data.order.currency,
-        name: "Restaurant Order",
-        description: "Order Payment",
-        order_id: paymentResponse.data.order.id,
-        handler: async (response) => {
-          try {
-            // First create the order
-            const orderResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, orderData)
-            const order = orderResponse.data.order
-
-            // Then verify payment
-            await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/verify-payment`, {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              orderId: order._id,
-            })
-
-            clearCart()
-            toast.success("Payment successful! Order placed.")
-
-            if (isFromTracking) {
-              window.open(`/order/${order._id}`, "_blank")
-              // Navigate back to original order
-              navigate(`/order/${originalOrderId}`)
-            } else {
-              navigate(`/order/${order._id}`)
-            }
-          } catch (error) {
-            toast.error("Payment verification failed")
-          }
-        },
-        prefill: {
-          name: formData.customerName,
-          contact: formData.customerPhone,
-        },
-        theme: {
-          color: "#ea580c",
-        },
+      if (!restaurant?.upiDetails?.isUpiEnabled || !restaurant?.upiDetails?.upiId) {
+        toast.error("UPI payment is not available for this restaurant")
+        return
       }
 
-      const rzp = new window.Razorpay(options)
-      rzp.on("payment.failed", (response) => {
-        toast.error("Payment failed. Please try again.")
+      // First create the order with pending payment status
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, {
+        ...orderData,
+        paymentStatus: "pending",
       })
-      rzp.open()
+      const order = response.data.order
+
+      // Generate UPI payment link
+      const upiLink = `upi://pay?pa=${restaurant.upiDetails.upiId}&pn=${encodeURIComponent(restaurant.upiDetails.merchantName)}&am=${getTotalPrice()}&cu=INR&tn=${encodeURIComponent(`Order #${order.orderNumber} - ${restaurant.name}`)}`
+
+      // Try to open UPI app
+      const upiWindow = window.open(upiLink, "_blank")
+
+      // If UPI app doesn't open, show manual instructions
+      setTimeout(() => {
+        if (!upiWindow || upiWindow.closed) {
+          toast.success("Order placed! Please complete the UPI payment.", {
+            duration: 5000,
+          })
+        }
+      }, 1000)
+
+      clearCart()
+
+      if (isFromTracking) {
+        window.open(`/order/${order._id}`, "_blank")
+        navigate(`/order/${originalOrderId}`)
+      } else {
+        navigate(`/order/${order._id}`)
+      }
     } catch (error) {
-      toast.error("Failed to initiate payment")
+      const errorMessage = error.response?.data?.message || "Failed to create order"
+      toast.error(errorMessage)
     }
   }
 
@@ -166,12 +147,7 @@ const Checkout = () => {
       }
 
       if (formData.paymentMethod === "upi") {
-        if (!razorpayLoaded) {
-          toast.error("Payment system is loading. Please try again.")
-          setLoading(false)
-          return
-        }
-        await handleRazorpayPayment(orderData)
+        await handleUpiPayment(orderData)
       } else {
         // Cash payment - create order directly
         const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, orderData)
@@ -182,7 +158,6 @@ const Checkout = () => {
 
         if (isFromTracking) {
           window.open(`/order/${order._id}`, "_blank")
-          // Navigate back to original order
           navigate(`/order/${originalOrderId}`)
         } else {
           navigate(`/order/${order._id}`)
@@ -386,7 +361,7 @@ const Checkout = () => {
                 formData.paymentMethod === "upi"
                   ? "border-orange-500 bg-orange-50"
                   : "border-gray-200 hover:border-gray-300"
-              }`}
+              } ${!restaurant?.upiDetails?.isUpiEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <input
                 type="radio"
@@ -394,12 +369,17 @@ const Checkout = () => {
                 value="upi"
                 checked={formData.paymentMethod === "upi"}
                 onChange={handleChange}
+                disabled={!restaurant?.upiDetails?.isUpiEnabled}
                 className="sr-only"
               />
               <CreditCard className="w-6 h-6 text-orange-600 mr-3" />
               <div>
                 <p className="font-medium text-gray-900">UPI Payment</p>
-                <p className="text-sm text-gray-600">Pay instantly with UPI</p>
+                <p className="text-sm text-gray-600">
+                  {restaurant?.upiDetails?.isUpiEnabled
+                    ? "Pay directly to restaurant via UPI"
+                    : "UPI payment not available"}
+                </p>
               </div>
             </motion.label>
           </div>
