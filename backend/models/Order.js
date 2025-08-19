@@ -50,7 +50,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "upi", "card"],
+      enum: ["cash", "upi", "card", "online"],
       required: true,
     },
     paymentStatus: {

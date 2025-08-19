@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ShoppingBag, Clock, User, Phone, MapPin, DollarSign, CheckCircle, Search, Filter, X } from "lucide-react"
+import { ShoppingBag, Clock, User, Phone, MapPin, CheckCircle, Search, Filter, X, IndianRupee } from "lucide-react"
 import axios from "axios"
 import useSocket from "../hooks/useSocket"
 import { toast } from "react-hot-toast"
@@ -45,40 +45,42 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder
   const nextStatus = getNextStatus(order.orderStatus)
 
   return (
-    <motion.div
+<motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.01 }}
       className="card"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber}</h3>
+      {/* Header - Stack on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 text-lg truncate">{order.orderNumber}</h3>
           <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
+        <span className={`px-3 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(order.orderStatus)}`}>
           {order.orderStatus}
         </span>
       </div>
 
+      {/* Customer Info */}
       <div className="space-y-3 mb-4">
         <div className="flex items-center text-gray-600 text-sm">
-          <User className="w-4 h-4 mr-2" />
-          {order.customerName}
+          <User className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span className="truncate">{order.customerName}</span>
         </div>
         <div className="flex items-center text-gray-600 text-sm">
-          <Phone className="w-4 h-4 mr-2" />
-          {order.customerPhone}
+          <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span className="truncate">{order.customerPhone}</span>
         </div>
         {order.tableNumber && (
           <div className="flex items-center text-gray-600 text-sm">
-            <MapPin className="w-4 h-4 mr-2" />
-            Table {order.tableNumber}
+            <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>Table {order.tableNumber}</span>
           </div>
         )}
         <div className="flex items-center text-gray-600 text-sm">
-          <Clock className="w-4 h-4 mr-2" />
-          Est. {order.estimatedTime} minutes
+          <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span>Est. {order.estimatedTime} minutes</span>
         </div>
       </div>
 
@@ -87,37 +89,43 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder
         <h4 className="font-medium text-gray-900 mb-2">Items ({order.items?.length})</h4>
         <div className="space-y-2">
           {order.items?.slice(0, 3).map((item, index) => (
-            <div key={index} className="flex justify-between text-sm">
-              <span className="text-gray-600">
+            <div key={index} className="flex justify-between text-sm gap-2">
+              <span className="text-gray-600 flex-1 min-w-0 truncate">
                 {item.quantity}x {item.dish?.name}
               </span>
-              <span className="text-gray-900">₹{(item.price * item.quantity).toFixed(2)}</span>
+              <span className="text-gray-900 font-medium flex-shrink-0">₹{(item.price * item.quantity).toFixed(2)}</span>
             </div>
           ))}
           {order.items?.length > 3 && <p className="text-xs text-gray-500">+{order.items.length - 3} more items</p>}
         </div>
       </div>
 
+      {/* Special Instructions */}
       {order.specialInstructions && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-yellow-800">
+          <p className="text-sm text-yellow-800 break-words">
             <strong>Special Instructions:</strong> {order.specialInstructions}
           </p>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-        <div className="flex items-center text-lg font-bold text-gray-900">
-          <DollarSign className="w-5 h-5 mr-1" />₹{order.totalAmount}
+      {/* Total and Actions - Responsive layout */}
+      <div className="pt-3 border-t border-gray-200 space-y-3">
+        {/* Total Amount */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center text-lg font-bold text-gray-900">
+            ₹{order.totalAmount}
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        {/* Action Buttons - Stack on mobile, row on larger screens */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
           {order.paymentMethod === "cash" && order.paymentStatus === "pending" && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onUpdatePaymentStatus(order._id, "completed")}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm flex items-center"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm flex items-center justify-center w-full sm:w-auto"
             >
               <CheckCircle className="w-4 h-4 mr-1" />
               Mark Paid
@@ -129,7 +137,7 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onCancelOrder(order._id)}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm flex items-center"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm flex items-center justify-center w-full sm:w-auto"
             >
               <X className="w-4 h-4 mr-1" />
               Cancel
@@ -141,7 +149,7 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onUpdateStatus(order._id, nextStatus)}
-              className="btn-primary text-sm flex items-center"
+              className="btn-primary text-sm flex items-center justify-center w-full sm:w-auto px-3 py-2"
             >
               <CheckCircle className="w-4 h-4 mr-1" />
               Mark as {nextStatus}
@@ -150,10 +158,11 @@ const OrderCard = ({ order, onUpdateStatus, onUpdatePaymentStatus, onCancelOrder
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-xs">
+      {/* Payment Status - Full width on mobile */}
+      <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
         <span className="text-gray-500">Payment: {order.paymentMethod}</span>
         <span
-          className={`px-2 py-1 rounded-full font-medium ${
+          className={`px-2 py-1 rounded-full font-medium text-center sm:text-left ${
             order.paymentStatus === "completed"
               ? "bg-green-100 text-green-800"
               : order.paymentStatus === "pending"

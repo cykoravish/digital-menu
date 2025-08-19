@@ -107,11 +107,15 @@ const Checkout = () => {
         return
       }
 
+      console.log("[v0] Creating Razorpay order for restaurant:", restaurantId)
+
       // Create Razorpay order using restaurant's keys
       const paymentResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/create-restaurant-payment`, {
         amount: getTotalPrice(),
         restaurantId: restaurantId,
       })
+
+      console.log("[v0] Razorpay order created:", paymentResponse.data)
 
       const { orderId, amount, currency, keyId } = paymentResponse.data
 
@@ -123,7 +127,11 @@ const Checkout = () => {
         description: `Order from ${restaurant.name}`,
         order_id: orderId,
         handler: async (response) => {
+          console.log("[v0] Razorpay payment successful:", response)
           try {
+            setLoading(true)
+            toast.loading("Verifying payment...")
+
             // Verify payment and create order
             const verifyResponse = await axios.post(
               `${import.meta.env.VITE_BACKEND_API}/orders/verify-restaurant-payment`,
@@ -134,8 +142,11 @@ const Checkout = () => {
               },
             )
 
+            console.log("[v0] Payment verification successful:", verifyResponse.data)
+
             const order = verifyResponse.data.order
             clearCart()
+            toast.dismiss() // Dismiss loading toast
             toast.success("Payment successful! Order placed.")
 
             if (isFromTracking) {
@@ -145,9 +156,20 @@ const Checkout = () => {
               navigate(`/order/${order._id}`)
             }
           } catch (error) {
-            console.error("Payment verification failed:", error)
-            toast.error("Payment verification failed. Please contact support.")
+            console.error("[v0] Payment verification failed:", error)
+            toast.dismiss() // Dismiss loading toast
+            const errorMessage = error.response?.data?.message || "Payment verification failed. Please contact support."
+            toast.error(errorMessage)
+          } finally {
+            setLoading(false)
           }
+        },
+        modal: {
+          ondismiss: () => {
+            console.log("[v0] Razorpay modal dismissed by user")
+            setLoading(false)
+            toast.error("Payment cancelled")
+          },
         },
         prefill: {
           name: formData.customerName,
@@ -158,12 +180,15 @@ const Checkout = () => {
         },
       }
 
+      console.log("[v0] Opening Razorpay modal with options:", options)
+
       const razorpay = new window.Razorpay(options)
       razorpay.open()
     } catch (error) {
-      console.error("Razorpay payment error:", error)
+      console.error("[v0] Razorpay payment error:", error)
       const errorMessage = error.response?.data?.message || "Failed to initiate payment"
       toast.error(errorMessage)
+      setLoading(false)
     }
   }
 

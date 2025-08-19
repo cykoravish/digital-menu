@@ -16,7 +16,7 @@ import {
   LineChart,
   Line,
 } from "recharts"
-import { TrendingUp, DollarSign, ShoppingBag, Store } from "lucide-react"
+import { TrendingUp , ShoppingBag, Store } from "lucide-react"
 import axios from "axios"
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
@@ -159,7 +159,7 @@ const Analytics = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card text-center">
-          <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-4" />
+          <TrendingUp  className="w-12 h-12 text-green-400 mx-auto mb-4" />
           <h3 className="text-2xl font-bold text-white mb-2">
             ₹{analyticsData.monthlyRevenue.reduce((sum, month) => sum + month.revenue, 0).toLocaleString()}
           </h3>
