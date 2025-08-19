@@ -16,6 +16,8 @@ import {
   Download,
   X,
   AlertTriangle,
+  CreditCard,
+  Check,
 } from "lucide-react"
 import axios from "axios"
 import io from "socket.io-client"
@@ -37,6 +39,8 @@ const OrderTracking = () => {
   const [menuItems, setMenuItems] = useState([])
   const [showMenu, setShowMenu] = useState(false)
   const [menuLoading, setMenuLoading] = useState(false)
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false)
+  const [confirmingPayment, setConfirmingPayment] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -57,7 +61,7 @@ const OrderTracking = () => {
   }, [order, setRestaurantContext])
 
   const setupSocket = () => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000"
     console.log("[v0] Connecting to socket server:", socketUrl)
 
     const newSocket = io(socketUrl, {
@@ -232,6 +236,24 @@ const OrderTracking = () => {
     return canDownload
   }
 
+  const handleConfirmPayment = async () => {
+    if (!confirm("Are you sure you have completed the UPI payment?")) return
+
+    setConfirmingPayment(true)
+    try {
+      await axios.put(`${import.meta.env.VITE_BACKEND_API}/orders/${orderId}/payment-status`, {
+        paymentStatus: "completed",
+      })
+      toast.success("Payment confirmation sent to restaurant!")
+      setShowPaymentConfirmation(false)
+      fetchOrder()
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to confirm payment")
+    } finally {
+      setConfirmingPayment(false)
+    }
+  }
+
   const handleCancelOrder = async () => {
     if (!confirm("Are you sure you want to cancel this order?")) return
 
@@ -329,6 +351,12 @@ const OrderTracking = () => {
     // Save the PDF
     doc.save(`receipt-${order.orderNumber}.pdf`)
     toast.success("Receipt downloaded successfully!")
+  }
+
+  const shouldShowPaymentConfirmation = () => {
+    return (
+      order && order.paymentMethod === "upi" && order.paymentStatus === "pending" && order.orderStatus !== "cancelled"
+    )
   }
 
   if (loading) {
@@ -604,7 +632,124 @@ const OrderTracking = () => {
             </div>
           )}
         </motion.div>
+
+        {/* UPI Payment Confirmation Section */}
+        {shouldShowPaymentConfirmation() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="card border-2 border-orange-200 bg-orange-50"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">UPI Payment Pending</h3>
+              <p className="text-gray-600 text-sm mb-4">Have you completed your UPI payment of ₹{order.totalAmount}?</p>
+
+              <div className="space-y-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleConfirmPayment}
+                  disabled={confirmingPayment}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  <Check className="w-5 h-5" />
+                  <span>{confirmingPayment ? "Confirming..." : "Yes, I've Paid"}</span>
+                </motion.button>
+
+                <button
+                  onClick={() => setShowPaymentConfirmation(true)}
+                  className="w-full text-orange-600 hover:text-orange-700 py-2 px-4 rounded-lg font-medium hover:bg-orange-100 transition-colors"
+                >
+                  Need Payment Details?
+                </button>
+              </div>
+
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-800">
+                  <strong>Note:</strong> Only confirm payment after you've successfully completed the UPI transaction.
+                  The restaurant will verify your payment.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
+
+      {/* Payment Details Modal */}
+      {showPaymentConfirmation && order && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowPaymentConfirmation(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Details</h3>
+              <p className="text-gray-600">Use these details to complete your UPI payment</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* UPI ID */}
+              {order.restaurant?.upiDetails?.upiId && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID</label>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <span className="font-mono text-sm text-gray-900 break-all">
+                      {order.restaurant.upiDetails.upiId}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Amount */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                <div className="bg-white rounded-lg p-3 border">
+                  <span className="text-2xl font-bold text-orange-600">₹{order.totalAmount}</span>
+                </div>
+              </div>
+
+              {/* Reference */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reference</label>
+                <div className="bg-white rounded-lg p-3 border">
+                  <span className="font-medium text-gray-900">Order #{order.orderNumber}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowPaymentConfirmation(false)}
+                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Close
+                </motion.button>
+              </div>
+
+              <div className="text-center pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  After completing payment, use the "Yes, I've Paid" button to notify the restaurant.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Menu Modal */}
       {showMenu && (
