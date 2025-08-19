@@ -3,19 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useParams, useNavigate } from "react-router-dom"
-import {
-  ArrowLeft,
-  CreditCard,
-  Banknote,
-  User,
-  Phone,
-  MapPin,
-  MessageSquare,
-  Smartphone,
-  Monitor,
-  Copy,
-  CheckCircle,
-} from "lucide-react"
+import { ArrowLeft, CreditCard, Banknote, User, Phone, MapPin, MessageSquare } from "lucide-react"
 import { useCart } from "../contexts/CartContext"
 import AdBanner from "../components/AdBanner"
 import axios from "axios"
@@ -37,47 +25,19 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false)
   const [restaurant, setRestaurant] = useState(null)
   const [formErrors, setFormErrors] = useState({})
-  const [showUpiInstructions, setShowUpiInstructions] = useState(false)
-  const [copiedField, setCopiedField] = useState("")
 
   const searchParams = new URLSearchParams(window.location.search)
   const isFromTracking = searchParams.get("from") === "tracking"
   const originalOrderId = searchParams.get("originalOrder")
 
-  const isValidUPI = (upiId) => {
-    const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/
-    return upiRegex.test(upiId)
-  }
-
-  const generateUPILink = (payeeVPA, payeeName, amount, transactionNote, transactionRef) => {
-    const params = new URLSearchParams({
-      pa: payeeVPA,
-      pn: payeeName,
-      am: amount.toString(),
-      cu: "INR",
-      tn: transactionNote,
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
     })
-
-    if (transactionRef) {
-      params.append("tr", transactionRef)
-    }
-
-    return `upi://pay?${params.toString()}`
-  }
-
-  const isMobile = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  }
-
-  const copyToClipboard = async (text, field) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedField(field)
-      toast.success(`${field} copied to clipboard!`)
-      setTimeout(() => setCopiedField(""), 2000)
-    } catch (error) {
-      toast.error("Failed to copy to clipboard")
-    }
   }
 
   useEffect(() => {
@@ -133,83 +93,76 @@ const Checkout = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handleUpiPayment = async (orderData) => {
+  const handleRazorpayPayment = async (orderData) => {
     try {
-      if (!restaurant?.upiDetails?.isUpiEnabled || !restaurant?.upiDetails?.upiId) {
-        toast.error("UPI payment is not available for this restaurant")
+      if (!restaurant?.razorpayDetails?.isRazorpayEnabled || !restaurant?.razorpayDetails?.keyId) {
+        toast.error("Online payment is not available for this restaurant")
         return
       }
 
-      // Validate UPI ID
-      if (!isValidUPI(restaurant.upiDetails.upiId)) {
-        toast.error("Invalid UPI ID configured for this restaurant")
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript()
+      if (!scriptLoaded) {
+        toast.error("Failed to load payment gateway")
         return
       }
 
-      // First create the order with pending payment status
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, {
-        ...orderData,
-        paymentStatus: "pending",
-      })
-      const order = response.data.order
-
-      const upiLink = generateUPILink(
-        restaurant.upiDetails.upiId,
-        restaurant.upiDetails.merchantName || restaurant.name,
-        getTotalPrice(),
-        `Order #${order.orderNumber} - ${restaurant.name}`,
-        order.orderNumber,
-      )
-
-      if (!isMobile()) {
-        setShowUpiInstructions(true)
-        toast.success("Order placed successfully! Please complete the UPI payment.", {
-          duration: 5000,
-        })
-      } else {
-        try {
-          // Try to open UPI app
-          window.location.href = upiLink
-
-          toast.success("Opening UPI app... Please complete the payment", {
-            duration: 5000,
-          })
-
-          setTimeout(() => {
-            if (!document.hidden) {
-              setShowUpiInstructions(true)
-              toast.info("If UPI app didn't open, use the payment details below", {
-                duration: 8000,
-              })
-            }
-          }, 3000)
-        } catch (error) {
-          console.error("Failed to open UPI app:", error)
-          setShowUpiInstructions(true)
-          toast.error("Failed to open UPI app. Please use the payment details below.")
-        }
-      }
-
-      clearCart()
-
-      // Navigate to order tracking
-      if (isFromTracking) {
-        window.open(`/order/${order._id}`, "_blank")
-        navigate(`/order/${originalOrderId}`)
-      } else {
-        navigate(`/order/${order._id}`)
-      }
-
-      window.upiPaymentDetails = {
-        upiId: restaurant.upiDetails.upiId,
-        merchantName: restaurant.upiDetails.merchantName || restaurant.name,
+      // Create Razorpay order using restaurant's keys
+      const paymentResponse = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders/create-restaurant-payment`, {
         amount: getTotalPrice(),
-        orderNumber: order.orderNumber,
-        upiLink: upiLink,
+        restaurantId: restaurantId,
+      })
+
+      const { orderId, amount, currency, keyId } = paymentResponse.data
+
+      const options = {
+        key: keyId, // Restaurant's Razorpay Key ID
+        amount: amount,
+        currency: currency,
+        name: restaurant.name,
+        description: `Order from ${restaurant.name}`,
+        order_id: orderId,
+        handler: async (response) => {
+          try {
+            // Verify payment and create order
+            const verifyResponse = await axios.post(
+              `${import.meta.env.VITE_BACKEND_API}/orders/verify-restaurant-payment`,
+              {
+                ...response,
+                orderData: orderData,
+                restaurantId: restaurantId,
+              },
+            )
+
+            const order = verifyResponse.data.order
+            clearCart()
+            toast.success("Payment successful! Order placed.")
+
+            if (isFromTracking) {
+              window.open(`/order/${order._id}`, "_blank")
+              navigate(`/order/${originalOrderId}`)
+            } else {
+              navigate(`/order/${order._id}`)
+            }
+          } catch (error) {
+            console.error("Payment verification failed:", error)
+            toast.error("Payment verification failed. Please contact support.")
+          }
+        },
+        prefill: {
+          name: formData.customerName,
+          contact: formData.customerPhone,
+        },
+        theme: {
+          color: "#ea580c",
+        },
       }
+
+      const razorpay = new window.Razorpay(options)
+      razorpay.open()
     } catch (error) {
-      console.error("UPI payment error:", error)
-      const errorMessage = error.response?.data?.message || "Failed to create order"
+      console.error("Razorpay payment error:", error)
+      const errorMessage = error.response?.data?.message || "Failed to initiate payment"
       toast.error(errorMessage)
     }
   }
@@ -234,8 +187,8 @@ const Checkout = () => {
         ...formData,
       }
 
-      if (formData.paymentMethod === "upi") {
-        await handleUpiPayment(orderData)
+      if (formData.paymentMethod === "online") {
+        await handleRazorpayPayment(orderData)
       } else {
         // Cash payment - create order directly
         const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/orders`, orderData)
@@ -289,134 +242,6 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-    )
-  }
-
-  const UpiInstructionsModal = () => {
-    if (!showUpiInstructions || !window.upiPaymentDetails) return null
-
-    const { upiId, merchantName, amount, orderNumber, upiLink } = window.upiPaymentDetails
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        onClick={() => setShowUpiInstructions(false)}
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              {isMobile() ? (
-                <Smartphone className="w-8 h-8 text-orange-600" />
-              ) : (
-                <Monitor className="w-8 h-8 text-orange-600" />
-              )}
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Complete UPI Payment</h3>
-            <p className="text-gray-600">
-              {isMobile()
-                ? "Use any UPI app to complete your payment"
-                : "Scan QR code or use UPI ID on your mobile device"}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {/* UPI ID */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID</label>
-              <div className="flex items-center justify-between bg-white rounded-lg p-3 border">
-                <span className="font-mono text-sm text-gray-900 break-all">{upiId}</span>
-                <button
-                  onClick={() => copyToClipboard(upiId, "UPI ID")}
-                  className="ml-2 p-2 text-gray-500 hover:text-orange-600 transition-colors"
-                >
-                  {copiedField === "UPI ID" ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Amount */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-              <div className="flex items-center justify-between bg-white rounded-lg p-3 border">
-                <span className="text-2xl font-bold text-orange-600">₹{amount}</span>
-                <button
-                  onClick={() => copyToClipboard(amount.toString(), "Amount")}
-                  className="ml-2 p-2 text-gray-500 hover:text-orange-600 transition-colors"
-                >
-                  {copiedField === "Amount" ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Reference */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Reference</label>
-              <div className="flex items-center justify-between bg-white rounded-lg p-3 border">
-                <span className="font-medium text-gray-900">Order #{orderNumber}</span>
-                <button
-                  onClick={() => copyToClipboard(`Order #${orderNumber}`, "Reference")}
-                  className="ml-2 p-2 text-gray-500 hover:text-orange-600 transition-colors"
-                >
-                  {copiedField === "Reference" ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
-              {isMobile() && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    window.location.href = upiLink
-                    setShowUpiInstructions(false)
-                  }}
-                  className="w-full bg-orange-600 text-white py-3 rounded-xl font-semibold hover:bg-orange-700 transition-colors"
-                >
-                  Open UPI App
-                </motion.button>
-              )}
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowUpiInstructions(false)}
-                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
-              >
-                I'll Pay Later
-              </motion.button>
-            </div>
-
-            <div className="text-center pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
-                After payment, your order status will be updated automatically.
-                <br />
-                Contact restaurant if payment doesn't reflect within 5 minutes.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
     )
   }
 
@@ -574,27 +399,27 @@ const Checkout = () => {
             <motion.label
               whileHover={{ scale: 1.02 }}
               className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                formData.paymentMethod === "upi"
+                formData.paymentMethod === "online"
                   ? "border-orange-500 bg-orange-50"
                   : "border-gray-200 hover:border-gray-300"
-              } ${!restaurant?.upiDetails?.isUpiEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${!restaurant?.razorpayDetails?.isRazorpayEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <input
                 type="radio"
                 name="paymentMethod"
-                value="upi"
-                checked={formData.paymentMethod === "upi"}
+                value="online"
+                checked={formData.paymentMethod === "online"}
                 onChange={handleChange}
-                disabled={!restaurant?.upiDetails?.isUpiEnabled}
+                disabled={!restaurant?.razorpayDetails?.isRazorpayEnabled}
                 className="sr-only"
               />
               <CreditCard className="w-6 h-6 text-orange-600 mr-3" />
               <div>
-                <p className="font-medium text-gray-900">UPI Payment</p>
+                <p className="font-medium text-gray-900">Pay Online</p>
                 <p className="text-sm text-gray-600">
-                  {restaurant?.upiDetails?.isUpiEnabled
-                    ? "Pay directly to restaurant via UPI"
-                    : "UPI payment not available"}
+                  {restaurant?.razorpayDetails?.isRazorpayEnabled
+                    ? "Secure payment via Razorpay"
+                    : "Online payment not available"}
                 </p>
               </div>
             </motion.label>
@@ -618,8 +443,6 @@ const Checkout = () => {
 
       {/* AdBanner for checkout page to show ads for free plan restaurants */}
       <AdBanner restaurantId={restaurantId} placement="checkout" />
-
-      <UpiInstructionsModal />
     </div>
   )
 }

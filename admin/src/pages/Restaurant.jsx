@@ -18,10 +18,10 @@ const Restaurant = () => {
     email: "",
     isOpen: false,
   })
-  const [upiDetails, setUpiDetails] = useState({
-    upiId: "",
-    merchantName: "",
-    isUpiEnabled: false,
+  const [razorpayDetails, setRazorpayDetails] = useState({
+    keyId: "",
+    keySecret: "",
+    isRazorpayEnabled: false,
   })
   const [openingHours, setOpeningHours] = useState({
     monday: { open: "09:00", close: "22:00", isOpen: true },
@@ -55,10 +55,10 @@ const Restaurant = () => {
         email: restaurantData.email || "",
         isOpen: restaurantData.isOpen || false,
       })
-      setUpiDetails({
-        upiId: restaurantData.upiDetails?.upiId || "",
-        merchantName: restaurantData.upiDetails?.merchantName || "",
-        isUpiEnabled: restaurantData.upiDetails?.isUpiEnabled || false,
+      setRazorpayDetails({
+        keyId: restaurantData.razorpayDetails?.keyId || "",
+        keySecret: restaurantData.razorpayDetails?.keySecret || "",
+        isRazorpayEnabled: restaurantData.razorpayDetails?.isRazorpayEnabled || false,
       })
       if (restaurantData.openingHours && typeof restaurantData.openingHours === "object") {
         const defaultHours = {
@@ -93,10 +93,10 @@ const Restaurant = () => {
     })
   }
 
-  const handleUpiChange = (e) => {
+  const handleRazorpayChange = (e) => {
     const { name, value, type, checked } = e.target
-    setUpiDetails({
-      ...upiDetails,
+    setRazorpayDetails({
+      ...razorpayDetails,
       [name]: type === "checkbox" ? checked : value,
     })
   }
@@ -129,7 +129,7 @@ const Restaurant = () => {
         submitData.append(key, formData[key])
       })
       submitData.append("openingHours", JSON.stringify(openingHours))
-      submitData.append("upiDetails", JSON.stringify(upiDetails))
+      submitData.append("razorpayDetails", JSON.stringify(razorpayDetails))
 
       if (selectedImage) {
         submitData.append("image", selectedImage)
@@ -283,64 +283,81 @@ const Restaurant = () => {
           </div>
         </div>
 
+        {/* Razorpay Payment Configuration */}
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
             <CreditCard className="w-6 h-6 mr-2 text-green-600" />
-            UPI Payment Configuration
+            Razorpay Payment Configuration
           </h2>
 
           <div className="space-y-4">
             <div className="flex items-center">
               <input
                 type="checkbox"
-                name="isUpiEnabled"
-                checked={upiDetails.isUpiEnabled}
-                onChange={handleUpiChange}
+                name="isRazorpayEnabled"
+                checked={razorpayDetails.isRazorpayEnabled}
+                onChange={handleRazorpayChange}
                 className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                 disabled={restaurant && !isEditing}
               />
-              <label className="ml-2 text-sm text-gray-700">Enable UPI payments for customers</label>
+              <label className="ml-2 text-sm text-gray-700">Enable Razorpay payments for customers</label>
             </div>
 
-            {upiDetails.isUpiEnabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            {razorpayDetails.isRazorpayEnabled && (
+              <div className="grid grid-cols-1 gap-6 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Razorpay Key ID *</label>
                   <input
                     type="text"
-                    name="upiId"
-                    value={upiDetails.upiId}
-                    onChange={handleUpiChange}
+                    name="keyId"
+                    value={razorpayDetails.keyId}
+                    onChange={handleRazorpayChange}
                     className="input w-full"
-                    placeholder="yourname@paytm / yourname@phonepe"
-                    required={upiDetails.isUpiEnabled}
+                    placeholder="rzp_test_xxxxxxxxxx or rzp_live_xxxxxxxxxx"
+                    required={razorpayDetails.isRazorpayEnabled}
                     disabled={restaurant && !isEditing}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter your UPI ID where payments will be received</p>
+                  <p className="text-xs text-gray-500 mt-1">Your Razorpay Key ID from the dashboard</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Merchant Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Razorpay Key Secret *</label>
                   <input
-                    type="text"
-                    name="merchantName"
-                    value={upiDetails.merchantName}
-                    onChange={handleUpiChange}
+                    type="password"
+                    name="keySecret"
+                    value={razorpayDetails.keySecret}
+                    onChange={handleRazorpayChange}
                     className="input w-full"
-                    placeholder="Restaurant Name or Owner Name"
-                    required={upiDetails.isUpiEnabled}
+                    placeholder="Your Razorpay Key Secret"
+                    required={razorpayDetails.isRazorpayEnabled}
                     disabled={restaurant && !isEditing}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Name that will appear in customer's payment app</p>
+                  <p className="text-xs text-gray-500 mt-1">Your Razorpay Key Secret (kept secure)</p>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">How to get Razorpay Keys:</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>
+                      Sign up at{" "}
+                      <a href="https://razorpay.com" target="_blank" rel="noopener noreferrer" className="underline">
+                        razorpay.com
+                      </a>
+                    </li>
+                    <li>Complete KYC verification</li>
+                    <li>Go to Settings → API Keys</li>
+                    <li>Generate new API keys</li>
+                    <li>Copy Key ID and Key Secret here</li>
+                  </ol>
                 </div>
               </div>
             )}
 
-            {!upiDetails.isUpiEnabled && (
+            {!razorpayDetails.isRazorpayEnabled && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> Enable UPI payments to allow customers to pay directly to your UPI account.
-                  This eliminates the need for cash handling and provides instant payment confirmation.
+                  <strong>Note:</strong> Enable Razorpay payments to allow customers to pay online directly to your
+                  account. Payments will be processed securely and deposited to your bank account.
                 </p>
               </div>
             )}

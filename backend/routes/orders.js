@@ -210,6 +210,132 @@ router.put("/:id/cancel", async (req, res) => {
   }
 })
 
+router.post("/create-restaurant-payment", async (req, res) => {
+  try {
+    const { amount, restaurantId } = req.body
+
+    const restaurant = await Restaurant.findById(restaurantId)
+    if (!restaurant || !restaurant.razorpayDetails?.isRazorpayEnabled) {
+      return res.status(400).json({ message: "Restaurant payment not configured" })
+    }
+
+    // Create Razorpay instance with restaurant's keys
+    const razorpayInstance = new Razorpay({
+      key_id: restaurant.razorpayDetails.keyId,
+      key_secret: restaurant.razorpayDetails.keySecret,
+    })
+
+    const options = {
+      amount: amount * 100, // amount in paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    }
+
+    const order = await razorpayInstance.orders.create(options)
+
+    res.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: restaurant.razorpayDetails.keyId,
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
+router.post("/verify-restaurant-payment", async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderData, restaurantId } = req.body
+
+    const restaurant = await Restaurant.findById(restaurantId)
+    if (!restaurant || !restaurant.razorpayDetails?.isRazorpayEnabled) {
+      return res.status(400).json({ message: "Restaurant payment not configured" })
+    }
+
+    const crypto = await import("crypto")
+    const hmac = crypto.createHmac("sha256", restaurant.razorpayDetails.keySecret)
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id)
+    const generated_signature = hmac.digest("hex")
+
+    if (generated_signature === razorpay_signature) {
+      // Payment verified, create order with completed payment status
+      const {
+        restaurantId: restId,
+        items,
+        customerName,
+        customerPhone,
+        tableNumber,
+        paymentMethod,
+        specialInstructions,
+      } = orderData
+
+      // Calculate total amount and validate dishes
+      let totalAmount = 0
+      const orderItems = []
+
+      for (const item of items) {
+        const dish = await Dish.findById(item.dishId)
+        if (!dish || !dish.isAvailable) {
+          return res.status(400).json({ message: `Dish ${item.dishId} not available` })
+        }
+
+        const itemTotal = dish.price * item.quantity
+        totalAmount += itemTotal
+
+        orderItems.push({
+          dish: dish._id,
+          quantity: item.quantity,
+          price: dish.price,
+        })
+
+        // Update dish order count
+        dish.orderCount += item.quantity
+        await dish.save()
+      }
+
+      const order = new Order({
+        restaurant: restId,
+        items: orderItems,
+        customerName,
+        customerPhone,
+        tableNumber,
+        totalAmount,
+        paymentMethod: "online",
+        paymentStatus: "completed",
+        specialInstructions,
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+      })
+
+      await order.save()
+
+      // Update restaurant stats
+      restaurant.totalOrders += 1
+      restaurant.totalRevenue += totalAmount
+      await restaurant.save()
+
+      // Populate order details
+      const populatedOrder = await Order.findById(order._id)
+        .populate("items.dish", "name price image")
+        .populate("restaurant", "name")
+
+      // Emit real-time update to restaurant
+      const io = req.app.get("io")
+      io.to(`restaurant-${restId}`).emit("new-order", populatedOrder)
+
+      res.json({
+        message: "Payment verified and order created successfully",
+        order: populatedOrder,
+      })
+    } else {
+      res.status(400).json({ message: "Payment verification failed" })
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
 // Create Razorpay order
 router.post("/create-payment", async (req, res) => {
   try {

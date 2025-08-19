@@ -67,18 +67,18 @@ const restaurantSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    upiDetails: {
-      upiId: {
+    razorpayDetails: {
+      keyId: {
         type: String,
         trim: true,
         default: "",
       },
-      merchantName: {
+      keySecret: {
         type: String,
         trim: true,
         default: "",
       },
-      isUpiEnabled: {
+      isRazorpayEnabled: {
         type: Boolean,
         default: false,
       },

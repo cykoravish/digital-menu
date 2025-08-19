@@ -9,7 +9,7 @@ const router = express.Router()
 // Create restaurant
 router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (req, res) => {
   try {
-    const { name, description, address, phone, email, upiDetails } = req.body
+    const { name, description, address, phone, email, razorpayDetails } = req.body
 
     // Check if user already has a restaurant
     const existingRestaurant = await Restaurant.findOne({ owner: req.user._id })
@@ -22,15 +22,15 @@ router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (
       imageUrl = req.file.path // Cloudinary URL is available in req.file.path
     }
 
-    let parsedUpiDetails = {}
-    if (upiDetails && typeof upiDetails === "string") {
+    let parsedRazorpayDetails = {}
+    if (razorpayDetails && typeof razorpayDetails === "string") {
       try {
-        parsedUpiDetails = JSON.parse(upiDetails)
+        parsedRazorpayDetails = JSON.parse(razorpayDetails)
       } catch (error) {
-        parsedUpiDetails = {}
+        parsedRazorpayDetails = {}
       }
-    } else if (upiDetails && typeof upiDetails === "object") {
-      parsedUpiDetails = upiDetails
+    } else if (razorpayDetails && typeof razorpayDetails === "object") {
+      parsedRazorpayDetails = razorpayDetails
     }
 
     const restaurant = new Restaurant({
@@ -41,13 +41,13 @@ router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (
       email,
       image: imageUrl,
       owner: req.user._id,
-      upiDetails: parsedUpiDetails,
+      razorpayDetails: parsedRazorpayDetails,
     })
 
     await restaurant.save()
 
     // Generate QR code
-    const qrCodeData = `${process.env.USER_FRONTEND_URL}/menu/${restaurant._id}`
+    const qrCodeData = `${process.env.FRONTEND_URL || "http://localhost:3002"}/menu/${restaurant._id}`
     const qrCode = await QRCode.toDataURL(qrCodeData)
     restaurant.qrCode = qrCode
     await restaurant.save()
@@ -124,11 +124,11 @@ router.put("/:id", auth, adminAuth, uploadRestaurantImage.single("image"), async
       }
     }
 
-    if (updateData.upiDetails && typeof updateData.upiDetails === "string") {
+    if (updateData.razorpayDetails && typeof updateData.razorpayDetails === "string") {
       try {
-        updateData.upiDetails = JSON.parse(updateData.upiDetails)
+        updateData.razorpayDetails = JSON.parse(updateData.razorpayDetails)
       } catch (error) {
-        return res.status(400).json({ message: "Invalid UPI details format" })
+        return res.status(400).json({ message: "Invalid Razorpay details format" })
       }
     }
 
