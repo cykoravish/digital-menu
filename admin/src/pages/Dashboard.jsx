@@ -1,11 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Store, ChefHat, ShoppingBag, DollarSign, TrendingUp, Clock, QrCode, Crown, Gift, Check, X } from "lucide-react"
-import { useAuth } from "../hooks/useAuth"
-import axios from "axios"
-import { toast } from "react-hot-toast"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Store,
+  ChefHat,
+  ShoppingBag,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  QrCode,
+  Crown,
+  Gift,
+  Check,
+  X,
+} from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 const StatCard = ({ title, value, icon: Icon, color, change }) => (
   <motion.div whileHover={{ scale: 1.02 }} className="card">
@@ -25,7 +38,7 @@ const StatCard = ({ title, value, icon: Icon, color, change }) => (
       </div>
     </div>
   </motion.div>
-)
+);
 
 const RecentOrder = ({ order }) => (
   <motion.div
@@ -44,25 +57,27 @@ const RecentOrder = ({ order }) => (
           order.orderStatus === "completed"
             ? "bg-primary-100 text-primary-800"
             : order.orderStatus === "pending"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-blue-100 text-blue-800"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-blue-100 text-blue-800"
         }`}
       >
         {order.orderStatus}
       </span>
     </div>
   </motion.div>
-)
+);
 
 const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
-  const isPremium = plan === "premium"
+  const isPremium = plan === "premium";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={`card relative overflow-hidden ${
-        isPremium ? "border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50" : ""
+        isPremium
+          ? "border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50"
+          : ""
       }`}
     >
       {isPremium && (
@@ -77,14 +92,24 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
             isPremium ? "bg-yellow-400" : "bg-gray-200"
           }`}
         >
-          {isPremium ? <Crown className="w-8 h-8 text-yellow-900" /> : <Gift className="w-8 h-8 text-gray-600" />}
+          {isPremium ? (
+            <Crown className="w-8 h-8 text-yellow-900" />
+          ) : (
+            <Gift className="w-8 h-8 text-gray-600" />
+          )}
         </div>
 
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{isPremium ? "Premium Plan" : "Free Plan"}</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {isPremium ? "Premium Plan" : "Free Plan"}
+        </h3>
 
         <div className="mb-4">
-          <span className="text-3xl font-bold text-gray-900">{isPremium ? "₹199" : "₹0"}</span>
-          <span className="text-gray-600 text-sm">{isPremium ? "/month" : "/forever"}</span>
+          <span className="text-3xl font-bold text-gray-900">
+            {isPremium ? "₹199" : "₹0"}
+          </span>
+          <span className="text-gray-600 text-sm">
+            {isPremium ? "/month" : "/forever"}
+          </span>
         </div>
 
         <div className="space-y-3 mb-6 text-left">
@@ -106,7 +131,11 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
             ) : (
               <X className="w-5 h-5 text-red-500 mr-3" />
             )}
-            <span className={`${isPremium ? "text-gray-700" : "text-gray-500"}`}>Ad-free customer experience</span>
+            <span
+              className={`${isPremium ? "text-gray-700" : "text-gray-500"}`}
+            >
+              Ad-free customer experience
+            </span>
           </div>
           <div className="flex items-center">
             {isPremium ? (
@@ -114,13 +143,19 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
             ) : (
               <X className="w-5 h-5 text-red-500 mr-3" />
             )}
-            <span className={`${isPremium ? "text-gray-700" : "text-gray-500"}`}>Priority customer support</span>
+            <span
+              className={`${isPremium ? "text-gray-700" : "text-gray-500"}`}
+            >
+              Priority customer support
+            </span>
           </div>
         </div>
 
         {isActive ? (
           <div className="space-y-2">
-            <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm font-medium">Current Plan</div>
+            <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm font-medium">
+              Current Plan
+            </div>
             {isPremium && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -145,84 +180,104 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
                 : "bg-gray-200 hover:bg-gray-300 text-gray-700"
             }`}
           >
-            {loading ? "Processing..." : isPremium ? "Upgrade to Premium" : "Current Plan"}
+            {loading
+              ? "Processing..."
+              : isPremium
+              ? "Upgrade to Premium"
+              : "Current Plan"}
           </motion.button>
         )}
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
 const Dashboard = () => {
-  const { user } = useAuth()
-  const [restaurant, setRestaurant] = useState(null)
+  const { user } = useAuth();
+  const [restaurant, setRestaurant] = useState(null);
   const [stats, setStats] = useState({
     totalDishes: 0,
     totalOrders: 0,
     totalRevenue: 0,
-  })
-  const [recentOrders, setRecentOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [subscription, setSubscription] = useState({ plan: "free", status: "active" })
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState({
+    plan: "free",
+    status: "active",
+  });
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   useEffect(() => {
-    fetchDashboardData()
-    fetchSubscription()
-  }, [])
+    fetchDashboardData();
+    fetchSubscription();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
       // Fetch restaurant data
       if (user?.restaurant) {
         const restaurantResponse = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}/restaurants/${user.restaurant._id}`,
-        )
-        setRestaurant(restaurantResponse.data.restaurant)
+          `${import.meta.env.VITE_BACKEND_API}/restaurants/${
+            user.restaurant._id
+          }`
+        );
+        setRestaurant(restaurantResponse.data.restaurant);
 
         // Fetch dishes count
-        const dishesResponse = await axios.get(`${import.meta.env.VITE_BACKEND_API}/dishes/my-dishes`)
-        setStats((prev) => ({ ...prev, totalDishes: dishesResponse.data.dishes.length }))
+        const dishesResponse = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API}/dishes/my-dishes`
+        );
+        setStats((prev) => ({
+          ...prev,
+          totalDishes: dishesResponse.data.dishes.length,
+        }));
 
         // Fetch orders
         const ordersResponse = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}/orders/restaurant/my-orders?limit=5`,
-        )
-        setRecentOrders(ordersResponse.data.orders)
+          `${
+            import.meta.env.VITE_BACKEND_API
+          }/orders/restaurant/my-orders?limit=5`
+        );
+        setRecentOrders(ordersResponse.data.orders);
 
         // Calculate stats from restaurant data
         setStats((prev) => ({
           ...prev,
           totalOrders: restaurantResponse.data.restaurant.totalOrders || 0,
           totalRevenue: restaurantResponse.data.restaurant.totalRevenue || 0,
-        }))
+        }));
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error)
+      console.error("Error fetching dashboard data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchSubscription = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_API}/subscriptions/current`)
-      setSubscription(response.data.subscription)
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_API}/subscriptions/current`
+      );
+      setSubscription(response.data.subscription);
     } catch (error) {
-      console.error("Error fetching subscription:", error)
+      console.error("Error fetching subscription:", error);
     }
-  }
+  };
 
   const handleUpgradeToPremium = async () => {
-    setSubscriptionLoading(true)
+    setSubscriptionLoading(true);
     try {
-      const scriptLoaded = await loadRazorpayScript()
+      const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
-        toast.error("Failed to load payment gateway. Please try again.")
-        return
+        toast.error("Failed to load payment gateway. Please try again.");
+        return;
       }
 
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/subscriptions/create-premium`)
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_API}/subscriptions/create-premium`
+      );
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -233,107 +288,102 @@ const Dashboard = () => {
         description: response.data.description,
         handler: async (response) => {
           try {
-            await axios.post(`${import.meta.env.VITE_BACKEND_API}/subscriptions/verify-premium`, {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            })
+            await axios.post(
+              `${
+                import.meta.env.VITE_BACKEND_API
+              }/subscriptions/verify-premium`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }
+            );
 
-            toast.success("Premium subscription activated!")
-            fetchSubscription()
+            toast.success("Premium subscription activated!");
+            fetchSubscription();
           } catch (error) {
-            toast.error("Payment verification failed")
+            toast.error("Payment verification failed");
           }
         },
         prefill: response.data.prefill,
         theme: {
           color: "#eab308",
         },
-      }
+      };
 
-      const rzp = new window.Razorpay(options)
+      const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
-        toast.error("Payment failed. Please try again.")
-        console.error("Payment failed:", response.error)
-      })
-      rzp.open()
+        toast.error("Payment failed. Please try again.");
+        console.error("Payment failed:", response.error);
+      });
+      rzp.open();
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to initiate subscription"
-      toast.error(errorMessage)
-      console.error("Subscription error:", error)
+      const errorMessage =
+        error.response?.data?.message || "Failed to initiate subscription";
+      toast.error(errorMessage);
+      console.error("Subscription error:", error);
     } finally {
-      setSubscriptionLoading(false)
+      setSubscriptionLoading(false);
     }
-  }
+  };
 
   const handleCancelSubscription = async () => {
-    if (!confirm("Are you sure you want to cancel your premium subscription?")) return
+    if (!confirm("Are you sure you want to cancel your premium subscription?"))
+      return;
 
-    setSubscriptionLoading(true)
+    setSubscriptionLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_API}/subscriptions/cancel`)
-      toast.success("Subscription cancelled successfully")
-      fetchSubscription()
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_API}/subscriptions/cancel`
+      );
+      toast.success("Subscription cancelled successfully");
+      fetchSubscription();
     } catch (error) {
-      toast.error("Failed to cancel subscription")
+      toast.error("Failed to cancel subscription");
     } finally {
-      setSubscriptionLoading(false)
+      setSubscriptionLoading(false);
     }
-  }
+  };
 
   const downloadQRCode = () => {
     if (restaurant?.qrCode) {
-      const link = document.createElement("a")
-      link.href = restaurant.qrCode
-      link.download = `${restaurant.name}-qr-code.png`
-      link.click()
+      const link = document.createElement("a");
+      link.href = restaurant.qrCode;
+      link.download = `${restaurant.name}-qr-code.png`;
+      link.click();
     }
-  }
+  };
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
-        resolve(true)
-        return
+        resolve(true);
+        return;
       }
 
-      const script = document.createElement("script")
-      script.src = "https://checkout.razorpay.com/v1/checkout.js"
-      script.onload = () => resolve(true)
-      script.onerror = () => resolve(false)
-      document.body.appendChild(script)
-    })
-  }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">Welcome to your restaurant management dashboard</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SubscriptionCard
-          plan="free"
-          isActive={subscription.plan === "free"}
-          onUpgrade={() => {}}
-          loading={subscriptionLoading}
-        />
-        <SubscriptionCard
-          plan="premium"
-          isActive={subscription.plan === "premium"}
-          onUpgrade={handleUpgradeToPremium}
-          onCancel={handleCancelSubscription}
-          loading={subscriptionLoading}
-        />
+        <p className="text-gray-600">
+          Welcome to your restaurant management dashboard
+        </p>
       </div>
 
       {!restaurant && (
@@ -345,11 +395,19 @@ const Dashboard = () => {
           <div className="flex items-center">
             <Store className="w-8 h-8 text-yellow-600 mr-4" />
             <div>
-              <h3 className="text-lg font-semibold text-yellow-800">Setup Your Restaurant</h3>
+              <h3 className="text-lg font-semibold text-yellow-800">
+                Setup Your Restaurant
+              </h3>
               <p className="text-yellow-700 mt-1">
-                You haven't created your restaurant profile yet. Set it up to start managing your menu and orders.
+                You haven't created your restaurant profile yet. Set it up to
+                start managing your menu and orders.
               </p>
-              <button className="btn-primary mt-3">Create Restaurant Profile</button>
+              <Link to="/restaurant">
+              <button className="btn-primary mt-3">
+                Create Restaurant Profile
+              </button>
+
+              </Link>
             </div>
           </div>
         </motion.div>
@@ -393,9 +451,12 @@ const Dashboard = () => {
             <div className="card">
               <div className="text-center">
                 <QrCode className="w-12 h-12 text-primary-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Restaurant QR Code</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Restaurant QR Code
+                </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  Customers can scan this QR code to view your menu and place orders
+                  Customers can scan this QR code to view your menu and place
+                  orders
                 </p>
                 {restaurant.qrCode && (
                   <div className="mb-4">
@@ -421,23 +482,46 @@ const Dashboard = () => {
             {/* Recent Orders */}
             <div className="lg:col-span-2 card">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Recent Orders
+                </h2>
                 <Clock className="w-5 h-5 text-gray-400" />
               </div>
 
               <div className="space-y-4">
                 {recentOrders.length > 0 ? (
-                  recentOrders.map((order) => <RecentOrder key={order._id} order={order} />)
+                  recentOrders.map((order) => (
+                    <RecentOrder key={order._id} order={order} />
+                  ))
                 ) : (
-                  <p className="text-gray-500 text-center py-8">No recent orders</p>
+                  <p className="text-gray-500 text-center py-8">
+                    No recent orders
+                  </p>
                 )}
               </div>
             </div>
           </div>
         </>
       )}
-    </div>
-  )
-}
 
-export default Dashboard
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <SubscriptionCard
+          plan="free"
+          isActive={subscription.plan === "free"}
+          onUpgrade={() => {}}
+          loading={subscriptionLoading}
+        />
+        <SubscriptionCard
+          plan="premium"
+          isActive={subscription.plan === "premium"}
+          onUpgrade={handleUpgradeToPremium}
+          onCancel={handleCancelSubscription}
+          loading={subscriptionLoading}
+        />
+      </div>
+
+    </div>
+  );
+};
+
+export default Dashboard;

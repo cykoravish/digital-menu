@@ -1,10 +1,10 @@
-"use client"
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import { CartProvider } from "./contexts/CartContext"
-import Menu from "./pages/Menu"
-import Checkout from "./pages/Checkout"
-import OrderTracking from "./pages/OrderTracking"
-import Home from "./pages/Home"
+"use client";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { CartProvider } from "./contexts/CartContext";
+import Menu from "./pages/Menu";
+import Checkout from "./pages/Checkout";
+import OrderTracking from "./pages/OrderTracking";
+import Home from "./pages/Home";
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
         </div>
       </Router>
     </CartProvider>
-  )
+  );
 }
 
-export default App
+export default App;

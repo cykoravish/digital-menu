@@ -47,7 +47,7 @@ router.post("/", auth, adminAuth, uploadRestaurantImage.single("image"), async (
     await restaurant.save()
 
     // Generate QR code
-    const qrCodeData = `${process.env.FRONTEND_URL || "http://localhost:3002"}/menu/${restaurant._id}`
+    const qrCodeData = `${process.env.USER_FRONTEND_URL}/menu/${restaurant._id}`
     const qrCode = await QRCode.toDataURL(qrCodeData)
     restaurant.qrCode = qrCode
     await restaurant.save()
