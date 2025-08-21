@@ -9,6 +9,7 @@ import Restaurants from "./pages/Restaurants"
 import Orders from "./pages/Orders"
 import Analytics from "./pages/Analytics"
 import Layout from "./components/Layout"
+import Ads from "./pages/Ads"
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth() // Added loading state
@@ -42,6 +43,7 @@ function App() {
                       <Route path="/restaurants" element={<Restaurants />} />
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/ads" element={<Ads />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

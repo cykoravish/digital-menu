@@ -104,9 +104,9 @@ const Cart = ({ isOpen, onClose, restaurant }) => {
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                          className="w-8 h-8 bg-primary-600 text-white rounded-md flex items-center justify-center hover:bg-primary-700"
+                          className="w-8 h-8 bg-white border border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-50"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-4 h-4 text-gray-600" />
                         </motion.button>
                       </div>
 

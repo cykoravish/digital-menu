@@ -616,7 +616,7 @@ const OrderTracking = () => {
             disabled={!canDownloadReceipt()}
             className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-colors ${
               canDownloadReceipt()
-                ? "bg-primary-600 hover:bg-primary-700 text-white"
+                ? "bg-orange-500 hover:bg-primary-700 text-white"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
             }`}
           >

@@ -69,7 +69,7 @@ const DishCard = ({ dish, onAddToCart }) => {
         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
           <div className="flex items-center space-x-1">
             <Clock className="w-3 h-3 text-gray-600" />
-            <span className="text-xs text-gray-600">{dish.preparationTime}m</span>
+            <span className="text-xs text-gray-600">{dish.preparationTime}</span>
           </div>
         </div>
       </div>

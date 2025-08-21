@@ -1,15 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, Users, Store, ShoppingBag, BarChart3, LogOut, Menu, X } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "../hooks/useAuth"
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard,
+  Users,
+  Store,
+  ShoppingBag,
+  BarChart3,
+  LogOut,
+  Menu,
+  X,
+  Megaphone,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const Layout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { logout } = useAuth()
-  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { logout } = useAuth();
+  const location = useLocation();
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -17,11 +27,12 @@ const Layout = ({ children }) => {
     { name: "Restaurants", href: "/restaurants", icon: Store },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  ]
+    { name: "Ads", href: "/ads", icon: Megaphone },
+  ];
 
   const handleLogout = () => {
-    logout()
-  }
+    logout();
+  };
 
   return (
     <div className="flex h-screen bg-slate-900">
@@ -49,19 +60,21 @@ const Layout = ({ children }) => {
           <nav className="mt-8 flex-1">
             <div className="px-4 space-y-2">
               {navigation.map((item) => {
-                const isActive = location.pathname === item.href
+                const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                      isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-slate-700 hover:text-white"
+                      isActive
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-300 hover:bg-slate-700 hover:text-white"
                     }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.name}
                   </Link>
-                )
+                );
               })}
             </div>
 
@@ -88,7 +101,10 @@ const Layout = ({ children }) => {
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-700">
           <h1 className="text-xl font-bold text-blue-400">SuperAdmin</h1>
-          <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="text-gray-400 hover:text-white"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -96,20 +112,22 @@ const Layout = ({ children }) => {
         <nav className="mt-8">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href
+              const isActive = location.pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-slate-700 hover:text-white"
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-300 hover:bg-slate-700 hover:text-white"
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   {item.name}
                 </Link>
-              )
+              );
             })}
           </div>
 
@@ -128,24 +146,33 @@ const Layout = ({ children }) => {
       <div className="flex-1 flex flex-col overflow-hidden lg:pl-64">
         {/* Top bar */}
         <header className="bg-slate-800 border-b border-slate-700 h-16 flex items-center justify-between px-6">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-400 hover:text-white">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-gray-400 hover:text-white"
+          >
             <Menu className="w-6 h-6" />
           </button>
 
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-400">Welcome back, Superadmin</div>
+            <div className="text-sm text-gray-400">
+              Welcome back, Superadmin
+            </div>
           </div>
         </header>
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {children}
           </motion.div>
         </main>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Layout
+export default Layout;

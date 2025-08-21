@@ -1,123 +1,122 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { X, ExternalLink, Star } from "lucide-react"
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, ExternalLink, Star } from "lucide-react";
 
 const AdBanner = ({ restaurantId, placement = "menu" }) => {
-  const [showAd, setShowAd] = useState(false)
-  const [adData, setAdData] = useState(null)
-  const [currentAdIndex, setCurrentAdIndex] = useState(0)
-
-  const adVariations = [
-    {
-      id: 1,
-      title: "Boost Your Restaurant Sales",
-      description: "Join 10,000+ restaurants increasing orders by 45% with our platform",
-      buttonText: "Start Free Trial",
-      link: "https://yourplatform.com/signup",
-      image: "/placeholder.svg?height=80&width=80",
-      features: ["No Setup Fees", "24/7 Support", "Real-time Analytics"],
-      gradient: "from-emerald-500 to-teal-600",
-      icon: "📈",
-    },
-    {
-      id: 2,
-      title: "Get More Food Orders",
-      description: "Smart ordering system that brings hungry customers to your restaurant",
-      buttonText: "Get Started",
-      link: "https://yourplatform.com/demo",
-      image: "/placeholder.svg?height=80&width=80",
-      features: ["Zero Commission", "Instant Setup", "Mobile Optimized"],
-      gradient: "from-orange-500 to-red-600",
-      icon: "🍽️",
-    },
-    {
-      id: 3,
-      title: "Digital Menu Revolution",
-      description: "Transform your restaurant with QR code menus and contactless ordering",
-      buttonText: "Try Now",
-      link: "https://yourplatform.com/qr-menu",
-      image: "/placeholder.svg?height=80&width=80",
-      features: ["QR Code Menus", "Online Payments", "Order Management"],
-      gradient: "from-purple-500 to-indigo-600",
-      icon: "📱",
-    },
-    {
-      id: 4,
-      title: "Restaurant Success Kit",
-      description: "Everything you need to grow your food business in the digital age",
-      buttonText: "Learn More",
-      link: "https://yourplatform.com/success-kit",
-      image: "/placeholder.svg?height=80&width=80",
-      features: ["Marketing Tools", "Customer Insights", "Growth Analytics"],
-      gradient: "from-blue-500 to-cyan-600",
-      icon: "🚀",
-    },
-  ]
+  const [showAd, setShowAd] = useState(false);
+  const [adData, setAdData] = useState(null);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [ads, setAds] = useState([]);
 
   useEffect(() => {
-    checkAdStatus()
-    const rotationInterval = setInterval(() => {
-      setCurrentAdIndex((prev) => (prev + 1) % adVariations.length)
-    }, 30000)
+    fetchAds();
+  }, [restaurantId]);
 
-    return () => clearInterval(rotationInterval)
-  }, [restaurantId])
+  useEffect(() => {
+    if (ads.length > 0) {
+      checkAdStatus();
+      const rotationInterval = setInterval(() => {
+        setCurrentAdIndex((prev) => (prev + 1) % ads.length);
+      }, 30000);
+
+      return () => clearInterval(rotationInterval);
+    }
+  }, [ads, restaurantId]);
+
+  const fetchAds = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/ads`);
+      const data = await response.json();
+
+      if (data.ads && data.ads.length > 0) {
+        setAds(data.ads);
+      } else {
+        setAds([]);
+      }
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      setAds([]);
+    }
+  };
 
   const checkAdStatus = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/restaurants/${restaurantId}/ad-status`)
-      const data = await response.json()
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BACKEND_API
+        }/restaurants/${restaurantId}/ad-status`
+      );
+      const data = await response.json();
 
-      const adClosed = localStorage.getItem(`ad-closed-${restaurantId}-${placement}`)
-      if (!data.hasPremium && !adClosed) {
-        setAdData(adVariations[currentAdIndex])
-        const delay = placement === "menu" ? 3000 : placement === "checkout" ? 1000 : 5000
-        setTimeout(() => setShowAd(true), delay)
+      const adClosed = localStorage.getItem(
+        `ad-closed-${restaurantId}-${placement}`
+      );
+      if (!data.hasPremium && !adClosed && ads.length > 0) {
+        setAdData(ads[currentAdIndex]);
+        const delay =
+          placement === "menu" ? 3000 : placement === "checkout" ? 1000 : 5000;
+        setTimeout(() => setShowAd(true), delay);
       }
     } catch (error) {
-      console.error("Error checking ad status:", error)
+      console.error("Error checking ad status:", error);
     }
-  }
+  };
 
   const handleClose = () => {
-    setShowAd(false)
-    localStorage.setItem(`ad-closed-${restaurantId}-${placement}`, "true")
-  }
+    setShowAd(false);
+    localStorage.setItem(`ad-closed-${restaurantId}-${placement}`, "true");
+  };
 
   const handleAdClick = () => {
-    window.open(adData.link, "_blank")
-    console.log("Ad clicked:", adData.title, "Placement:", placement)
-  }
+    window.open(adData.link, "_blank");
+    console.log("Ad clicked:", adData.title, "Placement:", placement);
+  };
 
   useEffect(() => {
-    if (showAd) {
-      setAdData(adVariations[currentAdIndex])
+    if (showAd && ads.length > 0) {
+      setAdData(ads[currentAdIndex]);
     }
-  }, [currentAdIndex, showAd])
+  }, [currentAdIndex, showAd, ads]);
 
-  if (!showAd || !adData) return null
+  useEffect(() => {
+    if (ads.length > 0) {
+      checkAdStatus();
+    }
+  }, [ads, currentAdIndex, restaurantId]);
+
+  if (!showAd || !adData || ads.length === 0) return null;
 
   const getAdLayout = () => {
     switch (placement) {
       case "checkout":
-        return "fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80"
+        return "fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80";
       case "tracking":
-        return "fixed bottom-20 left-4 right-4 md:left-4 md:w-72"
+        return "fixed bottom-20 left-4 right-4 md:left-4 md:w-72";
       default: // menu
-        return "fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96"
+        return "fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96";
     }
-  }
+  };
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: placement === "checkout" ? -100 : 100, scale: 0.9 }}
+        initial={{
+          opacity: 0,
+          y: placement === "checkout" ? -100 : 100,
+          scale: 0.9,
+        }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: placement === "checkout" ? -100 : 100, scale: 0.9 }}
+        exit={{
+          opacity: 0,
+          y: placement === "checkout" ? -100 : 100,
+          scale: 0.9,
+        }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`${getAdLayout()} bg-gradient-to-br ${adData.gradient} rounded-xl shadow-2xl z-50 overflow-hidden`}
+        className={`${getAdLayout()} bg-gradient-to-br ${
+          adData.gradient
+        } rounded-xl shadow-2xl z-50 overflow-hidden`}
       >
         <div className="relative p-4 md:p-6">
           <button
@@ -129,23 +128,41 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
 
           <div className="flex items-start space-x-3 md:space-x-4">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl md:text-3xl">
-                {adData.icon}
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl md:text-3xl overflow-hidden">
+                {adData.image &&
+                adData.image !== "/placeholder.svg?height=80&width=80" ? (
+                  <img
+                    src={adData.image || "/placeholder.svg"}
+                    alt={adData.title}
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                ) : (
+                  <span>{adData.icon}</span>
+                )}
               </div>
             </div>
 
             <div className="flex-1 text-white min-w-0">
-              <h3 className="font-bold text-base md:text-lg mb-1 leading-tight">{adData.title}</h3>
-              <p className="text-white/90 text-xs md:text-sm mb-3 leading-relaxed">{adData.description}</p>
+              <h3 className="font-bold text-base md:text-lg mb-1 leading-tight">
+                {adData.title}
+              </h3>
+              <p className="text-white/90 text-xs md:text-sm mb-3 leading-relaxed">
+                {adData.description}
+              </p>
 
-              <div className="flex flex-wrap gap-1 md:gap-2 mb-3 md:mb-4">
-                {adData.features.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-1 text-xs bg-white/20 rounded-full px-2 py-1">
-                    <Star className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                    <span className="text-xs">{feature}</span>
-                  </div>
-                ))}
-              </div>
+              {adData.features && adData.features.length > 0 && (
+                <div className="flex flex-wrap gap-1 md:gap-2 mb-3 md:mb-4">
+                  {adData.features.slice(0, 3).map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center space-x-1 text-xs bg-white/20 rounded-full px-2 py-1"
+                    >
+                      <Star className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                      <span className="text-xs">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -162,20 +179,22 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
           <div className="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-full -translate-y-8 md:-translate-y-10 translate-x-8 md:translate-x-10"></div>
           <div className="absolute bottom-0 left-0 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full translate-y-6 md:translate-y-8 -translate-x-6 md:-translate-x-8"></div>
 
-          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
-            {adVariations.map((_, index) => (
-              <div
-                key={index}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentAdIndex ? "bg-white" : "bg-white/40"
-                }`}
-              />
-            ))}
-          </div>
+          {ads.length > 1 && (
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
+              {ads.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentAdIndex ? "bg-white" : "bg-white/40"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </motion.div>
     </AnimatePresence>
-  )
-}
+  );
+};
 
-export default AdBanner
+export default AdBanner;

@@ -12,6 +12,7 @@ import dishRoutes from "./routes/dishes.js";
 import orderRoutes from "./routes/orders.js";
 import superadminRoutes from "./routes/superadmin.js";
 import subscriptionRoutes from "./routes/subscriptions.js";
+import adsRoutes from "./routes/ads.js";
 
 dotenv.config();
 
@@ -89,6 +90,7 @@ app.use("/api/dishes", dishRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/ads", adsRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
