@@ -49,7 +49,6 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
         }/restaurants/${restaurantId}/ad-status`
       );
       const data = await response.json();
-
       const adClosed = localStorage.getItem(
         `ad-closed-${restaurantId}-${placement}`
       );
@@ -75,6 +74,7 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
   };
 
   useEffect(() => {
+    console.log("abbay", showAd)
     if (showAd && ads.length > 0) {
       setAdData(ads[currentAdIndex]);
     }
@@ -85,6 +85,34 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
       checkAdStatus();
     }
   }, [ads, currentAdIndex, restaurantId]);
+
+  // Function to convert Tailwind gradient to CSS gradient
+  const convertTailwindToCSSGradient = (tailwindGradient) => {
+    const colorMap = {
+      'emerald-500': '#10b981',
+      'teal-600': '#0d9488',
+      'blue-500': '#3b82f6',
+      'purple-600': '#9333ea',
+      'pink-500': '#ec4899',
+      'rose-600': '#e11d48',
+      'orange-500': '#f97316',
+      'red-600': '#dc2626',
+      'indigo-500': '#6366f1',
+      'cyan-500': '#06b6d4',
+      'yellow-500': '#eab308',
+    };
+
+    // Parse the Tailwind gradient string
+    const match = tailwindGradient.match(/from-(.+?)\s+to-(.+)/);
+    if (match) {
+      const fromColor = colorMap[match[1]] || '#3b82f6';
+      const toColor = colorMap[match[2]] || '#9333ea';
+      return `linear-gradient(135deg, ${fromColor}, ${toColor})`;
+    }
+    
+    // Fallback gradient
+    return 'linear-gradient(135deg, #3b82f6, #9333ea)';
+  };
 
   if (!showAd || !adData || ads.length === 0) return null;
 
@@ -114,9 +142,10 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
           scale: 0.9,
         }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`${getAdLayout()} bg-gradient-to-br ${
-          adData.gradient
-        } rounded-xl shadow-2xl z-50 overflow-hidden`}
+        className={`${getAdLayout()} rounded-xl shadow-2xl z-50 overflow-hidden`}
+        style={{
+          background: convertTailwindToCSSGradient(adData.gradient)
+        }}
       >
         <div className="relative p-4 md:p-6">
           <button
