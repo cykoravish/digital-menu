@@ -1,28 +1,33 @@
-"use client"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
-import { AuthProvider } from "./contexts/AuthContext"
-import { useAuth } from "./hooks/useAuth" // Updated import path
-import Login from "./pages/Login"
-import Dashboard from "./pages/Dashboard"
-import Admins from "./pages/Admins"
-import Restaurants from "./pages/Restaurants"
-import Orders from "./pages/Orders"
-import Analytics from "./pages/Analytics"
-import Layout from "./components/Layout"
-import Ads from "./pages/Ads"
+"use client";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { useAuth } from "./hooks/useAuth"; // Updated import path
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Admins from "./pages/Admins";
+import Restaurants from "./pages/Restaurants";
+import Orders from "./pages/Orders";
+import Analytics from "./pages/Analytics";
+import Layout from "./components/Layout";
+import Ads from "./pages/Ads";
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth() // Added loading state
+  const { isAuthenticated, loading } = useAuth(); // Added loading state
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-white text-lg">Loading...</div>
       </div>
-    )
+    );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />
+  return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
 function App() {
@@ -53,7 +58,7 @@ function App() {
         </div>
       </Router>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

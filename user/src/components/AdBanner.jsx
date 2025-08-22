@@ -19,7 +19,7 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
       checkAdStatus();
       const rotationInterval = setInterval(() => {
         setCurrentAdIndex((prev) => (prev + 1) % ads.length);
-      }, 30000);
+      }, 20000);
 
       return () => clearInterval(rotationInterval);
     }
@@ -49,10 +49,7 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
         }/restaurants/${restaurantId}/ad-status`
       );
       const data = await response.json();
-      const adClosed = localStorage.getItem(
-        `ad-closed-${restaurantId}-${placement}`
-      );
-      if (!data.hasPremium && !adClosed && ads.length > 0) {
+      if (!data.hasPremium && ads.length > 0) {
         setAdData(ads[currentAdIndex]);
         const delay =
           placement === "menu" ? 3000 : placement === "checkout" ? 1000 : 5000;
@@ -74,7 +71,6 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
   };
 
   useEffect(() => {
-    console.log("abbay", showAd)
     if (showAd && ads.length > 0) {
       setAdData(ads[currentAdIndex]);
     }
@@ -208,7 +204,7 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
           <div className="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-full -translate-y-8 md:-translate-y-10 translate-x-8 md:translate-x-10"></div>
           <div className="absolute bottom-0 left-0 w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-full translate-y-6 md:translate-y-8 -translate-x-6 md:-translate-x-8"></div>
 
-          {ads.length > 1 && (
+          {/* {ads.length > 1 && (
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
               {ads.map((_, index) => (
                 <div
@@ -219,7 +215,7 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
                 />
               ))}
             </div>
-          )}
+          )} */}
         </div>
       </motion.div>
     </AnimatePresence>

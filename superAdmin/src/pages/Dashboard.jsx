@@ -258,7 +258,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
+      {/* <div className="card">
         <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <motion.button
@@ -283,7 +283,7 @@ const Dashboard = () => {
             System Maintenance
           </motion.button>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

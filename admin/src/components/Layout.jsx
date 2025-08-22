@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, Store, ChefHat, ShoppingBag, BarChart3, LogOut, Menu, X } from "lucide-react"
+import { LayoutDashboard, Store, ChefHat, ShoppingBag, BarChart3, LogOut, Menu, X, IndianRupee } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
 
@@ -13,10 +13,11 @@ const Layout = ({ children }) => {
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Restaurant", href: "/restaurant", icon: Store },
-    { name: "Dishes", href: "/dishes", icon: ChefHat },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
+    { name: "Dishes", href: "/dishes", icon: ChefHat },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Restaurant", href: "/restaurant", icon: Store },
+    { name: "Plans", href: "/plan", icon: IndianRupee },
   ]
 
   const handleLogout = () => {
