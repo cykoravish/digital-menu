@@ -3,7 +3,16 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import { Crown, Gift, Check, X } from "lucide-react";
+import {
+  Crown,
+  Gift,
+  Check,
+  Package,
+  CheckCircle,
+  CalendarDays,
+  Clock,
+  X,
+} from "lucide-react";
 
 const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
   const isPremium = plan === "premium";
@@ -249,20 +258,106 @@ export default function Plans() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <SubscriptionCard
-        plan="free"
-        isActive={subscription.plan === "free"}
-        onUpgrade={() => {}}
-        loading={subscriptionLoading}
-      />
-      <SubscriptionCard
-        plan="premium"
-        isActive={subscription.plan === "premium"}
-        onUpgrade={handleUpgradeToPremium}
-        onCancel={handleCancelSubscription}
-        loading={subscriptionLoading}
-      />
+    <>
+    <div className="w-full bg-gradient-to-br from-green-50 to-green-100 text-green-800 rounded-2xl shadow-xl p-6 mb-8">
+  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+    🌿 Current Subscription
+    <span className="text-sm bg-green-600 text-white px-3 py-1 rounded-full shadow">
+      {subscription.plan.toUpperCase()}
+    </span>
+  </h2>
+
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+    {/* Plan */}
+    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <Package size={18} /> Plan
+      </div>
+      <span
+        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${
+          subscription.plan === "free"
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-200 text-yellow-700"
+        }`}
+      >
+        {subscription.plan}
+      </span>
     </div>
+
+    {/* Status */}
+    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <CheckCircle size={18} /> Status
+      </div>
+      <p
+        className={`text-lg font-semibold ${
+          subscription.status === "active"
+            ? "text-green-600"
+            : subscription.status === "pending"
+            ? "text-yellow-600"
+            : "text-red-600"
+        }`}
+      >
+        {subscription.status}
+      </p>
+    </div>
+
+    {/* Start Date */}
+    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <CalendarDays size={18} /> Start Date
+      </div>
+      <p className="text-lg font-semibold text-gray-700">
+        {new Date(subscription.startDate).toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+      </p>
+    </div>
+
+    {/* End Date */}
+    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+        <Clock size={18} /> End Date
+      </div>
+      <p
+        className={`text-lg font-semibold ${
+          subscription.plan === "free"
+            ? "text-green-600"
+            : new Date(subscription.endDate) < new Date()
+            ? "text-red-600"
+            : "text-orange-600"
+        }`}
+      >
+        {subscription.plan === "free"
+          ? "Lifetime"
+          : new Date(subscription.endDate).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+      </p>
+    </div>
+  </div>
+</div>
+
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <SubscriptionCard
+          plan="free"
+          isActive={subscription.plan === "free"}
+          onUpgrade={() => {}}
+          loading={subscriptionLoading}
+        />
+        <SubscriptionCard
+          plan="premium"
+          isActive={subscription.plan === "premium"}
+          onUpgrade={handleUpgradeToPremium}
+          onCancel={handleCancelSubscription}
+          loading={subscriptionLoading}
+        />
+      </div>
+    </>
   );
 }

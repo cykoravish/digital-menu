@@ -9,7 +9,6 @@ const AdBanner = ({ restaurantId, placement = "menu" }) => {
   const [adData, setAdData] = useState(null);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [ads, setAds] = useState([]);
-
   useEffect(() => {
     fetchAds();
   }, [restaurantId]);

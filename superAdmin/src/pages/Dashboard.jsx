@@ -256,34 +256,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {/* Quick Actions */}
-      {/* <div className="card">
-        <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="p-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
-          >
-            Export User Data
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="p-4 bg-green-600 hover:bg-green-700 rounded-lg text-white font-medium transition-colors"
-          >
-            Generate Reports
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="p-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
-          >
-            System Maintenance
-          </motion.button>
-        </div>
-      </div> */}
     </div>
   )
 }
