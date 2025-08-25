@@ -2,19 +2,19 @@ import React from "react";
 
 export default function BrandSection() {
   const logos = [
-    "https://cdn.worldvectorlogo.com/logos/intel-1.svg",
-    "https://cdn.worldvectorlogo.com/logos/tesla-9.svg",
-    "https://cdn.worldvectorlogo.com/logos/slack-new-logo.svg",
-    "https://cdn.worldvectorlogo.com/logos/vimeo-icon.svg",
-    "https://cdn.worldvectorlogo.com/logos/intel-1.svg",
-    "https://cdn.worldvectorlogo.com/logos/tesla-9.svg",
-    "https://cdn.worldvectorlogo.com/logos/slack-new-logo.svg",
-    "https://cdn.worldvectorlogo.com/logos/vimeo-icon.svg",
-    "https://cdn.worldvectorlogo.com/logos/intel-1.svg",
-    "https://cdn.worldvectorlogo.com/logos/tesla-9.svg",
-    "https://cdn.worldvectorlogo.com/logos/slack-new-logo.svg",
-    "https://cdn.worldvectorlogo.com/logos/vimeo-icon.svg",
+    "https://cdn.worldvectorlogo.com/logos/zomato-2.svg",
+    "https://cdn.worldvectorlogo.com/logos/swiggy-1.svg",
+    "https://cdn.worldvectorlogo.com/logos/dominos-pizza-1.svg",
+    "https://cdn.worldvectorlogo.com/logos/kfc-2.svg",
+    "https://cdn.worldvectorlogo.com/logos/burger-king-4.svg",
+    "https://cdn.worldvectorlogo.com/logos/pizza-hut-2.svg",
+    "https://cdn.worldvectorlogo.com/logos/starbucks-coffee.svg",
+    "https://cdn.worldvectorlogo.com/logos/subway-1.svg",
+    "https://cdn.worldvectorlogo.com/logos/burger-king-4.svg",
+    "https://cdn.worldvectorlogo.com/logos/starbucks-coffee.svg",
+    "https://cdn.worldvectorlogo.com/logos/dunkin-donuts.svg",
   ];
+
   return (
     <div className="text-center px-6 py-16 bg-[#fffef5]">
       <p className="text-sm text-gray-500">
@@ -37,7 +37,7 @@ export default function BrandSection() {
           ))}
         </div>
       </div>
-            <style>{`
+      <style>{`
        @keyframes marquee {
         0% { transform: translateX(0); }
         100% { transform: translateX(-100%); }

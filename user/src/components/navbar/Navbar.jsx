@@ -72,12 +72,12 @@ export default function Navbar() {
         </ul>
 
         {/* Desktop CTA */}
-        <Link
-          to="/"
+        <a
+          href={import.meta.env.VITE_ADMIN_SIGNUP_URL || "/"}
           className="hidden lg:flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 transition text-black font-semibold py-2 px-4 rounded-full cursor-pointer"
         >
           Get Started For Free <ArrowRight size={16} />
-        </Link>
+        </a>
 
         {/* Mobile Menu Toggle */}
         <button
@@ -123,13 +123,13 @@ export default function Navbar() {
             )
           )}
 
-          <Link
-            to="/"
+          <a
+            href={import.meta.env.VITE_ADMIN_SIGNUP_URL || "/"}
             className="mt-4 bg-yellow-400 hover:bg-yellow-500 transition text-black font-semibold py-2 px-4 rounded-full cursor-pointer"
             onClick={() => setIsOpen(false)}
           >
             Get Started For Free
-          </Link>
+          </a>
         </div>
       </div>
     </nav>

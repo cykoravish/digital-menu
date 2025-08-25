@@ -5,6 +5,7 @@ import Navbar from "../components/navbar/Navbar";
 import Features from "../components/home/Features";
 import Discount from "../components/home/Discount";
 import TestimonialSection from "../components/home/Testimonials";
+import Conatctus from "../components/home/Conatctus";
 import Footer from "../components/home/Footer";
 import { scroller } from "react-scroll";
 import { useEffect } from "react";
@@ -33,6 +34,7 @@ const Home = () => {
       <Features />
       <Discount />
       <TestimonialSection />
+      <Conatctus/>
       <Footer />
     </div>
   );

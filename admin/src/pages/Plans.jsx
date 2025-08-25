@@ -103,7 +103,7 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
             <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm font-medium">
               Current Plan
             </div>
-            {isPremium && (
+            {/* {isPremium && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -113,7 +113,7 @@ const SubscriptionCard = ({ plan, isActive, onUpgrade, onCancel, loading }) => {
               >
                 {loading ? "Processing..." : "Cancel Subscription"}
               </motion.button>
-            )}
+            )} */}
           </div>
         ) : (
           <motion.button
@@ -144,6 +144,7 @@ export default function Plans() {
     plan: "free",
     status: "active",
   });
+  console.log("subscription: ", JSON.stringify(subscription));
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const handleUpgradeToPremium = async () => {
@@ -166,16 +167,17 @@ export default function Plans() {
         order_id: response.data.orderId,
         name: response.data.name,
         description: response.data.description,
-        handler: async (response) => {
+        handler: async (paymentResponse) => {
           try {
             await axios.post(
               `${
                 import.meta.env.VITE_BACKEND_API
               }/subscriptions/verify-premium`,
               {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+                amount: response.data.amount,
               }
             );
 
@@ -259,105 +261,174 @@ export default function Plans() {
 
   return (
     <>
-    <div className="w-full bg-gradient-to-br from-green-50 to-green-100 text-green-800 rounded-2xl shadow-xl p-6 mb-8">
-  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-    🌿 Current Subscription
-    <span className="text-sm bg-green-600 text-white px-3 py-1 rounded-full shadow">
-      {subscription.plan.toUpperCase()}
-    </span>
-  </h2>
+      <div className="w-full bg-gradient-to-br from-green-50 to-green-100 text-green-800 rounded-2xl shadow-xl p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          🌿 Current Subscription
+          <span className="text-sm bg-green-600 text-white px-3 py-1 rounded-full shadow">
+            {subscription.plan.toUpperCase()}
+          </span>
+        </h2>
 
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-    {/* Plan */}
-    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
-      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
-        <Package size={18} /> Plan
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          {/* Plan */}
+          <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+              <Package size={18} /> Plan
+            </div>
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${
+                subscription.plan === "free"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-yellow-200 text-yellow-700"
+              }`}
+            >
+              {subscription.plan}
+            </span>
+          </div>
+
+          {/* Status */}
+          <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+              <CheckCircle size={18} /> Status
+            </div>
+            <p
+              className={`text-lg font-semibold ${
+                subscription.status === "active"
+                  ? "text-green-600"
+                  : subscription.status === "pending"
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }`}
+            >
+              {subscription.status}
+            </p>
+          </div>
+
+          {/* Start Date */}
+          <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+              <CalendarDays size={18} /> Start Date
+            </div>
+            <p className="text-lg font-semibold text-gray-700">
+              {new Date(subscription.startDate).toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </p>
+          </div>
+
+          {/* End Date */}
+          <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+              <Clock size={18} /> End Date
+            </div>
+            <p
+              className={`text-lg font-semibold ${
+                subscription.plan === "free"
+                  ? "text-green-600"
+                  : new Date(subscription.endDate) < new Date()
+                  ? "text-red-600"
+                  : "text-orange-600"
+              }`}
+            >
+              {subscription.plan === "free"
+                ? "Lifetime"
+                : new Date(subscription.endDate).toLocaleDateString("en-IN", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+            </p>
+          </div>
+        </div>
       </div>
-      <span
-        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${
-          subscription.plan === "free"
-            ? "bg-green-100 text-green-700"
-            : "bg-yellow-200 text-yellow-700"
-        }`}
-      >
-        {subscription.plan}
-      </span>
-    </div>
 
-    {/* Status */}
-    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
-      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
-        <CheckCircle size={18} /> Status
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {subscription.plan === "free" ? (
+          <>
+            <SubscriptionCard
+              plan="free"
+              isActive={subscription.plan === "free"}
+              onUpgrade={() => {}}
+              loading={subscriptionLoading}
+            />
+            <SubscriptionCard
+              plan="premium"
+              isActive={subscription.plan === "premium"}
+              onUpgrade={handleUpgradeToPremium}
+              onCancel={handleCancelSubscription}
+              loading={subscriptionLoading}
+            />
+          </>
+        ) : (
+          <SubscriptionCard
+            plan="premium"
+            isActive={subscription.plan === "premium"}
+            onUpgrade={handleUpgradeToPremium}
+            onCancel={handleCancelSubscription}
+            loading={subscriptionLoading}
+          />
+        )}
       </div>
-      <p
-        className={`text-lg font-semibold ${
-          subscription.status === "active"
-            ? "text-green-600"
-            : subscription.status === "pending"
-            ? "text-yellow-600"
-            : "text-red-600"
-        }`}
-      >
-        {subscription.status}
-      </p>
-    </div>
 
-    {/* Start Date */}
-    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
-      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
-        <CalendarDays size={18} /> Start Date
+      {/* 🧾 Transaction History Section */}
+      <div className="mt-10 bg-white shadow rounded-xl p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">
+          💳 Transaction History
+        </h2>
+
+        {subscription.transactions && subscription.transactions.length > 0 ? (
+          <ul className="space-y-4">
+            {subscription.transactions.map((txn, idx) => (
+              <li
+                key={txn._id || idx}
+                className="flex items-center justify-between p-4 rounded-lg border hover:shadow-md transition"
+              >
+                {/* Left Info */}
+                <div className="flex flex-col">
+                  <span className="font-medium text-gray-800">
+                    Payment ID:{" "}
+                    <span className="text-gray-600">{txn.paymentId}</span>
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    Order ID: {txn.orderId}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    Date: {new Date(txn.date).toLocaleString("en-IN", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+
+                {/* Right Info */}
+                <div className="flex flex-col items-end">
+                  <span className="font-semibold text-gray-900">
+                    ₹{(txn.amount / 100).toFixed(2)} {txn.currency}
+                  </span>
+
+                  {txn.status === "success" ? (
+                    <span className="flex items-center text-green-600 text-sm font-medium mt-1">
+                      <CheckCircle className="w-4 h-4 mr-1" /> Success
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-red-600 text-sm font-medium mt-1">
+                      <X className="w-4 h-4 mr-1" /> Failed
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-sm">No transactions found</p>
+        )}
       </div>
-      <p className="text-lg font-semibold text-gray-700">
-        {new Date(subscription.startDate).toLocaleDateString("en-IN", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
-      </p>
-    </div>
 
-    {/* End Date */}
-    <div className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition">
-      <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
-        <Clock size={18} /> End Date
-      </div>
-      <p
-        className={`text-lg font-semibold ${
-          subscription.plan === "free"
-            ? "text-green-600"
-            : new Date(subscription.endDate) < new Date()
-            ? "text-red-600"
-            : "text-orange-600"
-        }`}
-      >
-        {subscription.plan === "free"
-          ? "Lifetime"
-          : new Date(subscription.endDate).toLocaleDateString("en-IN", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-      </p>
-    </div>
-  </div>
-</div>
-
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SubscriptionCard
-          plan="free"
-          isActive={subscription.plan === "free"}
-          onUpgrade={() => {}}
-          loading={subscriptionLoading}
-        />
-        <SubscriptionCard
-          plan="premium"
-          isActive={subscription.plan === "premium"}
-          onUpgrade={handleUpgradeToPremium}
-          onCancel={handleCancelSubscription}
-          loading={subscriptionLoading}
-        />
-      </div>
     </>
   );
 }
