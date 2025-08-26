@@ -13,6 +13,8 @@ import orderRoutes from "./routes/orders.js";
 import superadminRoutes from "./routes/superadmin.js";
 import subscriptionRoutes from "./routes/subscriptions.js";
 import adsRoutes from "./routes/ads.js";
+import contactRoutes from "./routes/contactRoutes.js"
+import quoteRoutes from "./routes/quoteRoutes.js";
 
 dotenv.config();
 
@@ -91,6 +93,10 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/ads", adsRoutes);
+
+//submissions
+app.use("/api/contact", contactRoutes);
+app.use("/api/quotes", quoteRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

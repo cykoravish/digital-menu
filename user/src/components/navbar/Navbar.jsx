@@ -38,12 +38,17 @@ export default function Navbar() {
       <div className="flex items-center justify-between px-6 lg:px-20 py-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 text-xl font-semibold">
-          <img
+          {/* <img
             src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png"
             alt="logo"
             className="w-6 h-6"
-          />
-          <span>Digital Menu</span>
+          /> */}
+          {/* <span className="text-4xl font-extrabold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent drop-shadow-md hover:drop-shadow-xl transition-all duration-300">
+            TapToTaste
+          </span> */}
+          <span className="lobster-regular text-3xl text-orange-600">
+            Tap to Taste
+          </span>
         </Link>
 
         {/* Desktop Menu */}
@@ -74,9 +79,9 @@ export default function Navbar() {
         {/* Desktop CTA */}
         <a
           href={import.meta.env.VITE_ADMIN_SIGNUP_URL || "/"}
-          className="hidden lg:flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 transition text-black font-semibold py-2 px-4 rounded-full cursor-pointer"
+          className="hidden lg:flex items-center gap-2 bg-[#ff6900] hover:bg-[#ff2f00] transition text-white font-semibold py-2 px-4 rounded-full cursor-pointer"
         >
-          Get Started For Free <ArrowRight size={16} />
+          Get Started For Free <ArrowRight size={24} />
         </a>
 
         {/* Mobile Menu Toggle */}

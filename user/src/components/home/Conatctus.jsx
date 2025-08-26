@@ -1,21 +1,39 @@
+import axios from "axios";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function ContactUs() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-
+  const [loading, setLoading] = useState(false);
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", form);
-    setForm({ name: "", email: "", message: "" });
+    try {
+      setLoading(true);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_API}/contact`, form);
+      if (res.status === 201) {
+        toast.success("Message sent successfully!");
+        setForm({ name: "", email: "", message: "" });
+      } else {
+        toast.error(res.data.error || "Something went wrong");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error(error.response?.data?.error || "Server error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <section id="contact" className="w-full py-16 px-6 md:px-12 lg:px-24 flex justify-center items-center">
+    <section
+      id="contact"
+      className="w-full py-16 px-6 md:px-12 lg:px-24 flex justify-center items-center"
+    >
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -45,13 +63,13 @@ export default function ContactUs() {
               We’d love to hear from you!
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Have a question, feedback, or just want to say hello?  
-              Use the form and we’ll get back to you soon.
+              Have a question, feedback, or just want to say hello? Use the form
+              and we’ll get back to you soon.
             </p>
             <div className="space-y-2">
               <p className="font-medium text-gray-700">📍 Dehradun, India</p>
-              <p className="font-medium text-gray-700">📧 hello@example.com</p>
-              <p className="font-medium text-gray-700">📞 +91 98765 43210</p>
+              <p className="font-medium text-gray-700">📧 taptotaste@novanectar.in</p>
+              <p className="font-medium text-gray-700">📞 +91 8979891708</p>
             </div>
           </motion.div>
 
@@ -97,12 +115,18 @@ export default function ContactUs() {
               ></textarea>
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: loading ? 1 : 1.05 }}
+              whileTap={{ scale: loading ? 1 : 0.95 }}
               type="submit"
-              className="w-full py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-md hover:bg-orange-700 transition"
+              disabled={loading}
+              className={`w-full py-3 rounded-xl text-white font-semibold shadow-md transition 
+    ${
+      loading
+        ? "bg-orange-400 cursor-not-allowed"
+        : "bg-orange-600 hover:bg-orange-700"
+    }`}
             >
-              Send Message 🚀
+              {loading ? "Sending..." : "Send Message"}
             </motion.button>
           </motion.form>
         </div>

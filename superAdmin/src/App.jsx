@@ -15,6 +15,7 @@ import Orders from "./pages/Orders";
 import Analytics from "./pages/Analytics";
 import Layout from "./components/Layout";
 import Ads from "./pages/Ads";
+import Submissions from "./pages/Submissions";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth(); // Added loading state
@@ -49,6 +50,7 @@ function App() {
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/ads" element={<Ads />} />
+                      <Route path="/submissions" element={<Submissions />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

@@ -344,8 +344,8 @@ export default function Plans() {
         </div>
       </div>
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {subscription.plan === "free" ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {subscription.plan === "free" && (
           <>
             <SubscriptionCard
               plan="free"
@@ -361,14 +361,6 @@ export default function Plans() {
               loading={subscriptionLoading}
             />
           </>
-        ) : (
-          <SubscriptionCard
-            plan="premium"
-            isActive={subscription.plan === "premium"}
-            onUpgrade={handleUpgradeToPremium}
-            onCancel={handleCancelSubscription}
-            loading={subscriptionLoading}
-          />
         )}
       </div>
 
@@ -395,7 +387,8 @@ export default function Plans() {
                     Order ID: {txn.orderId}
                   </span>
                   <span className="text-sm text-gray-500">
-                    Date: {new Date(txn.date).toLocaleString("en-IN", {
+                    Date:{" "}
+                    {new Date(txn.date).toLocaleString("en-IN", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -428,7 +421,6 @@ export default function Plans() {
           <p className="text-gray-500 text-sm">No transactions found</p>
         )}
       </div>
-
     </>
   );
 }
